@@ -15,17 +15,22 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
+import { Accordion } from "@/components/ui/Accordion";
 import { Alert, Badge, Chip, Rating, Skeleton } from "@/components/ui/Badge";
 import { Button, IconButton } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import {
+  Checkbox,
+  FieldRow,
   Hint,
   Input,
   Label,
   QtyStepper,
+  RadioCard,
   Select,
   SizeOption,
   Swatch,
+  Textarea,
 } from "@/components/ui/Field";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { products } from "@/lib/data/products";
@@ -93,6 +98,8 @@ export default function StyleguidePage() {
   const [qty, setQty] = useState(1);
   const [size, setSize] = useState("L");
   const [color, setColor] = useState("Хар");
+  const [terms, setTerms] = useState(true);
+  const [ship, setShip] = useState("standard");
 
   const cardSamples = [
     products[0],
@@ -334,9 +341,28 @@ export default function StyleguidePage() {
                     <option>Баянзүрх</option>
                   </Select>
                 </div>
+                <FieldRow
+                  id="sg-note"
+                  label="Нэмэлт заавар"
+                  hint="Орцны код, хаалганы тэмдэглэл гэх мэт"
+                >
+                  <Textarea
+                    id="sg-note"
+                    placeholder="Хүргэлтийн үед анхаарах зүйл…"
+                  />
+                </FieldRow>
                 <div>
                   <Label htmlFor="sg-disabled">Disabled төлөв</Label>
                   <Input id="sg-disabled" placeholder="Идэвхгүй" disabled />
+                </div>
+                <div className="space-y-3">
+                  <Checkbox
+                    id="sg-terms"
+                    checked={terms}
+                    onChange={setTerms}
+                    label="Буцаалтын нөхцөлийг зөвшөөрч байна"
+                    description="14 хоногийн дотор буцаах боломжтой"
+                  />
                 </div>
               </div>
             </section>
@@ -421,6 +447,51 @@ export default function StyleguidePage() {
                 <Skeleton className="h-4 w-2/3" />
                 <Skeleton className="h-4 w-1/3" />
               </div>
+            </section>
+          </div>
+
+          {/* Сонголтын карт ба эвхмэл жагсаалт */}
+          <div className="mt-12 grid gap-10 lg:grid-cols-2 lg:gap-12">
+            <section>
+              <Heading>Сонголтын карт — хүргэлт, төлбөр</Heading>
+              <div className="space-y-3">
+                <RadioCard
+                  id="sg-ship-standard"
+                  name="sg-ship"
+                  icon={<Truck className="size-5" />}
+                  label="Стандарт хүргэлт"
+                  description="24–48 цагт хүргэнэ"
+                  meta="5,000₮"
+                  checked={ship === "standard"}
+                  onChange={() => setShip("standard")}
+                />
+                <RadioCard
+                  id="sg-ship-pickup"
+                  name="sg-ship"
+                  icon={<CreditCard className="size-5" />}
+                  label="Салбараас очиж авах"
+                  description="Сүхбаатар дүүрэг, 1-р хороо"
+                  meta="Үнэгүй"
+                  checked={ship === "pickup"}
+                  onChange={() => setShip("pickup")}
+                />
+              </div>
+            </section>
+
+            <section>
+              <Heading>Эвхмэл жагсаалт — түгээмэл асуулт</Heading>
+              <Accordion
+                items={[
+                  {
+                    q: "Хүргэлт үнэгүй болох дүн хэд вэ?",
+                    a: "100,000₮-с дээш худалдан авалтад Улаанбаатар хотод үнэгүй.",
+                  },
+                  {
+                    q: "Барааг хэдэн хоногт буцаах вэ?",
+                    a: "Хүлээн авснаас хойш 14 хоногийн дотор, хэрэглээгүй байхад.",
+                  },
+                ]}
+              />
             </section>
           </div>
 

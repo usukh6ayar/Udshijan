@@ -10,7 +10,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Input, QtyStepper } from "@/components/ui/Field";
 import { OrderSummary } from "./OrderSummary";
 import { lineKey, useCart, type ResolvedLine } from "@/lib/cart";
-import { cx, money } from "@/lib/format";
+import { money } from "@/lib/format";
 
 export function CartView() {
   const { resolved, totals, coupon, couponRate } = useCart();
