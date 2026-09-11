@@ -11,6 +11,8 @@ export const SORT_OPTIONS: { key: SortKey; label: string }[] = [
 ];
 
 export type FilterState = {
+  /** Ангилалын slug — зөвхөн хайлтын хуудсанд ашиглана (`/c/[slug]` дээр зам нь өөрөө заана) */
+  cat: string | null;
   sub: string | null;
   brands: string[];
   colors: string[];
@@ -26,6 +28,7 @@ export type FilterState = {
 };
 
 export const EMPTY_FILTERS: FilterState = {
+  cat: null,
   sub: null,
   brands: [],
   colors: [],
@@ -52,6 +55,7 @@ export function parseFilters(sp: URLSearchParams): FilterState {
   };
 
   return {
+    cat: sp.get("ang"),
     sub: sp.get("sub"),
     brands: list("brand"),
     colors: list("ongo"),
@@ -70,6 +74,7 @@ export function parseFilters(sp: URLSearchParams): FilterState {
 
 export function serializeFilters(f: FilterState): URLSearchParams {
   const sp = new URLSearchParams();
+  if (f.cat) sp.set("ang", f.cat);
   if (f.sub) sp.set("sub", f.sub);
   if (f.brands.length) sp.set("brand", f.brands.join(","));
   if (f.colors.length) sp.set("ongo", f.colors.join(","));
@@ -91,6 +96,7 @@ export function activeFilterCount(f: FilterState): number {
     f.brands.length +
     f.colors.length +
     f.sizes.length +
+    (f.cat ? 1 : 0) +
     (f.sub ? 1 : 0) +
     (f.priceMin !== null || f.priceMax !== null ? 1 : 0) +
     (f.inStock ? 1 : 0) +
@@ -102,6 +108,7 @@ export function activeFilterCount(f: FilterState): number {
 
 export function applyFilters(products: Product[], f: FilterState): Product[] {
   const filtered = products.filter((p) => {
+    if (f.cat && p.category !== f.cat) return false;
     if (f.sub && p.subcategory !== f.sub) return false;
     if (f.brands.length && !f.brands.includes(p.brand)) return false;
     if (f.colors.length && !p.colors.some((c) => f.colors.includes(c.name)))

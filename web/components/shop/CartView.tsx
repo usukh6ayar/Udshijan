@@ -8,6 +8,7 @@ import { Alert } from "@/components/ui/Badge";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input, QtyStepper } from "@/components/ui/Field";
+import { OrderSummary } from "./OrderSummary";
 import { lineKey, useCart, type ResolvedLine } from "@/lib/cart";
 import { cx, money } from "@/lib/format";
 
@@ -62,7 +63,24 @@ export function CartView() {
         </div>
 
         <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
-          <OrderSummary />
+          <OrderSummary
+            totals={totals}
+            footer={
+              <>
+                <ButtonLink href="/checkout" size="lg" fullWidth>
+                  Захиалга хийх
+                </ButtonLink>
+                <ButtonLink
+                  href="/c/huvtsas"
+                  variant="secondary"
+                  size="lg"
+                  fullWidth
+                >
+                  Худалдан авалтаа үргэлжлүүлэх
+                </ButtonLink>
+              </>
+            }
+          />
           <CouponForm coupon={coupon} couponRate={couponRate} />
           <WholesaleCallout />
 
@@ -168,74 +186,6 @@ function CartRow({ line }: { line: ResolvedLine }) {
         <X className="size-4" />
       </button>
     </li>
-  );
-}
-
-function OrderSummary() {
-  const { totals } = useCart();
-
-  return (
-    <div className="overflow-hidden rounded-card border border-line bg-white">
-      <h2 className="border-b border-line px-5 py-4 text-h3">Захиалгын дүн</h2>
-
-      <dl className="space-y-3 px-5 py-4 text-body">
-        <Row label="Барааны дүн" value={money(totals.subtotal)} />
-        {totals.savings > 0 && (
-          <Row
-            label="Хөнгөлөлт"
-            value={`−${money(totals.savings)}`}
-            tone="success"
-          />
-        )}
-        <Row
-          label="Хүргэлт"
-          value={totals.freeShipping ? "Үнэгүй" : money(totals.shipping)}
-          tone={totals.freeShipping ? "success" : undefined}
-        />
-        <Row label="НӨАТ (10%)" value={money(totals.vat)} />
-      </dl>
-
-      <div className="flex items-baseline justify-between border-t border-line px-5 py-4">
-        <span className="text-h3">Нийт</span>
-        <span className="text-[26px] leading-none font-extrabold tabular-nums">
-          {money(totals.total)}
-        </span>
-      </div>
-
-      <div className="space-y-3 px-5 pb-5">
-        {/* Захиалгын урсгал (checkout) нь дизайны дараагийн хэсэгт багтана */}
-        <ButtonLink href="/checkout" size="lg" fullWidth>
-          Захиалга хийх
-        </ButtonLink>
-        <ButtonLink href="/c/huvtsas" variant="secondary" size="lg" fullWidth>
-          Худалдан авалтаа үргэлжлүүлэх
-        </ButtonLink>
-      </div>
-    </div>
-  );
-}
-
-function Row({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone?: "success";
-}) {
-  return (
-    <div className="flex items-baseline justify-between gap-4">
-      <dt className="text-ink-2">{label}</dt>
-      <dd
-        className={cx(
-          "font-bold tabular-nums",
-          tone === "success" ? "text-success" : "text-ink",
-        )}
-      >
-        {value}
-      </dd>
-    </div>
   );
 }
 

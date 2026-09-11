@@ -1,7 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { COLORS, HIDDEN_BRAND_COUNT, SIZES, brands } from "@/lib/data/catalog";
+import {
+  COLORS,
+  HIDDEN_BRAND_COUNT,
+  SIZES,
+  brands,
+  categories,
+  categoryBySlug,
+} from "@/lib/data/catalog";
 import type { Category } from "@/lib/data/types";
 import type { FilterState } from "@/lib/filters";
 import { Input, SizeOption, Swatch, Toggle } from "@/components/ui/Field";
@@ -15,7 +22,11 @@ export function FilterPanel({
   onChange,
   idPrefix = "f",
 }: {
-  category: Category;
+  /**
+   * Ангилалын хуудсанд тухайн ангилал дамжина → дэд ангилалаар шүүнэ.
+   * Хайлтын хуудсанд байхгүй → эхлээд ангилал сонгож, дараа нь дэд ангилал нээгдэнэ.
+   */
+  category?: Category;
   filters: FilterState;
   onChange: (patch: Patch) => void;
   /** Sidebar болон bottom sheet хоёулаа зэрэг DOM-д байх тул id давхцахаас сэргийлнэ */
@@ -27,31 +38,68 @@ export function FilterPanel({
   const toggleIn = (list: string[], value: string) =>
     list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
 
+  // Хайлтын хуудсанд сонгосон ангилал байвал түүний дэд ангилалыг харуулна
+  const subSource = category ?? (filters.cat ? categoryBySlug(filters.cat) : undefined);
+
   return (
     <div className="divide-y divide-line">
       <Group title="Ангилал">
-        <ul className="space-y-2">
-          {category.subcategories.map((s) => {
-            const active = filters.sub === s.slug;
-            return (
-              <li key={s.slug}>
-                <button
-                  type="button"
-                  onClick={() => onChange({ sub: active ? null : s.slug, page: 1 })}
-                  className={cx(
-                    "text-left text-body transition-colors hover:text-brand",
-                    active ? "font-bold text-brand" : "text-ink",
-                  )}
-                >
-                  {s.name}{" "}
-                  <span className={active ? "text-brand" : "text-ink-2"}>
-                    ({num(s.count)})
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+        {!category && (
+          <ul className="mb-3 space-y-2">
+            {categories.map((c) => {
+              const active = filters.cat === c.slug;
+              return (
+                <li key={c.slug}>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onChange({
+                        cat: active ? null : c.slug,
+                        // Ангилал солигдоход өмнөх дэд ангилал утгагүй болно
+                        sub: null,
+                        page: 1,
+                      })
+                    }
+                    className={cx(
+                      "text-left text-body transition-colors hover:text-brand",
+                      active ? "font-bold text-brand" : "text-ink",
+                    )}
+                  >
+                    {c.name}{" "}
+                    <span className={active ? "text-brand" : "text-ink-2"}>
+                      ({num(c.productCount)})
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        {subSource && (
+          <ul className={cx("space-y-2", !category && "border-t border-line pt-3")}>
+            {subSource.subcategories.map((s) => {
+              const active = filters.sub === s.slug;
+              return (
+                <li key={s.slug}>
+                  <button
+                    type="button"
+                    onClick={() => onChange({ sub: active ? null : s.slug, page: 1 })}
+                    className={cx(
+                      "text-left text-body transition-colors hover:text-brand",
+                      active ? "font-bold text-brand" : "text-ink",
+                    )}
+                  >
+                    {s.name}{" "}
+                    <span className={active ? "text-brand" : "text-ink-2"}>
+                      ({num(s.count)})
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </Group>
 
       <Group title="Үнэ">

@@ -10,6 +10,7 @@ import { Badge, Rating } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { QtyStepper, SizeOption, Swatch } from "@/components/ui/Field";
 import { useCart } from "@/lib/cart";
+import { useWishlist } from "@/lib/wishlist";
 import { cx, discountPercent, money, num } from "@/lib/format";
 import type { Product } from "@/lib/data/types";
 
@@ -30,8 +31,9 @@ export function ProductDetail({
       product.sizes.find((s) => s.inStock)?.label,
   );
   const [qty, setQty] = useState(1);
-  const [wished, setWished] = useState(false);
   const [added, setAdded] = useState(false);
+  const { has, toggle } = useWishlist();
+  const wished = has(product.slug);
 
   const off = discountPercent(product.price, product.compareAt);
   const soldOut = product.stock === 0;
@@ -70,7 +72,12 @@ export function ProductDetail({
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2 lg:gap-10">
-          <Gallery product={product} off={off} wished={wished} onWish={() => setWished((v) => !v)} />
+          <Gallery
+            product={product}
+            off={off}
+            wished={wished}
+            onWish={() => toggle(product.slug)}
+          />
 
           <div className="lg:pt-2">
             <p className="font-mono text-caption tracking-wider text-ink-2 uppercase">
@@ -216,8 +223,12 @@ export function ProductDetail({
                 </Button>
                 <button
                   type="button"
-                  onClick={() => setWished((v) => !v)}
-                  aria-label="Хүслийн жагсаалтад нэмэх"
+                  onClick={() => toggle(product.slug)}
+                  aria-label={
+                    wished
+                      ? "Хүслийн жагсаалтаас хасах"
+                      : "Хүслийн жагсаалтад нэмэх"
+                  }
                   aria-pressed={wished}
                   className="flex size-11 shrink-0 items-center justify-center rounded-btn border border-line bg-white hover:bg-surface"
                 >

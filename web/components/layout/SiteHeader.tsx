@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import Form from "next/form";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Heart, Menu, Search, ShoppingCart, User } from "lucide-react";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { categories } from "@/lib/data/catalog";
 import { useCart } from "@/lib/cart";
+import { useWishlist } from "@/lib/wishlist";
 import { cx } from "@/lib/format";
 
 export function TopBar({ className }: { className?: string }) {
@@ -49,13 +51,64 @@ function Wordmark() {
   );
 }
 
-function CartCount() {
-  const { count } = useCart();
-  if (count === 0) return null;
+function Count({ value }: { value: number }) {
+  if (value === 0) return null;
   return (
     <span className="absolute -top-1.5 -right-2 flex size-5 items-center justify-center rounded-full bg-brand text-[10px] font-bold text-white tabular-nums">
-      {count}
+      {value}
     </span>
+  );
+}
+
+function CartCount() {
+  const { count } = useCart();
+  return <Count value={count} />;
+}
+
+function WishCount() {
+  const { count } = useWishlist();
+  return <Count value={count} />;
+}
+
+/**
+ * Хайлтын форм. `next/form` нь GET хэлбэрээ хадгалж (JS-гүй үед ч ажиллана),
+ * илгээхэд бүтэн дахин ачаалахын оронд client-side шилжилт хийнэ.
+ * `prefetch={false}` — форм нь хуудас бүр дээр байдаг тул `/hailt`-ын landing-ийг
+ * урьдчилж татах нь илүүдэл ачаалал.
+ */
+function SearchForm({
+  className,
+  placeholder,
+}: {
+  className?: string;
+  placeholder: string;
+}) {
+  return (
+    <Form action="/hailt" prefetch={false} role="search" className={className}>
+      <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-ink-2" />
+      {/* Толгой нь статик хуудсуудад ч ордог тул useSearchParams-ыг Suspense-д хийнэ */}
+      <Suspense fallback={<SearchInput placeholder={placeholder} q="" />}>
+        <PrefilledSearchInput placeholder={placeholder} />
+      </Suspense>
+    </Form>
+  );
+}
+
+function PrefilledSearchInput({ placeholder }: { placeholder: string }) {
+  const q = useSearchParams().get("q") ?? "";
+  return <SearchInput placeholder={placeholder} q={q} />;
+}
+
+function SearchInput({ placeholder, q }: { placeholder: string; q: string }) {
+  return (
+    <input
+      key={q}
+      name="q"
+      defaultValue={q}
+      placeholder={placeholder}
+      aria-label={placeholder}
+      className="h-11 w-full rounded-input border border-line bg-white pr-3 pl-10 text-body placeholder:text-ink-2 focus:border-brand focus:ring-2 focus:ring-brand/25 focus:outline-none"
+    />
   );
 }
 
@@ -87,26 +140,20 @@ export function SiteHeader({ className }: { className?: string }) {
           Ангилал
         </button>
 
-        <form
-          action="/hailt"
-          role="search"
+        <SearchForm
           className="relative hidden min-w-0 flex-1 lg:block"
-        >
-          <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-ink-2" />
-          <input
-            name="q"
-            placeholder="Бараа, брэнд хайх…"
-            aria-label="Бараа, брэнд хайх"
-            className="h-11 w-full rounded-input border border-line bg-white pr-3 pl-10 text-body placeholder:text-ink-2 focus:border-brand focus:ring-2 focus:ring-brand/25 focus:outline-none"
-          />
-        </form>
+          placeholder="Бараа, брэнд хайх…"
+        />
 
         <div className="ml-auto flex items-center gap-1 lg:gap-4">
           <Link
             href="/huslin-jagsaalt"
             className="hidden flex-col items-center gap-1 px-2 text-caption text-ink-2 hover:text-ink lg:flex"
           >
-            <Heart className="size-5 text-ink" />
+            <span className="relative">
+              <Heart className="size-5 text-ink" />
+              <WishCount />
+            </span>
             Хүслийн
           </Link>
 
@@ -134,15 +181,7 @@ export function SiteHeader({ className }: { className?: string }) {
 
       {/* Мобайлын хайлт */}
       <div className="container-uds pb-3 lg:hidden">
-        <form action="/hailt" role="search" className="relative">
-          <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-ink-2" />
-          <input
-            name="q"
-            placeholder="Бараа хайх…"
-            aria-label="Бараа хайх"
-            className="h-11 w-full rounded-input border border-line bg-white pr-3 pl-10 text-body placeholder:text-ink-2 focus:border-brand focus:ring-2 focus:ring-brand/25 focus:outline-none"
-          />
-        </form>
+        <SearchForm className="relative" placeholder="Бараа хайх…" />
       </div>
 
       {menuOpen && <MegaMenu onClose={() => setMenuOpen(false)} />}

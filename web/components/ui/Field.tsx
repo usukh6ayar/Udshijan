@@ -79,6 +79,152 @@ export function Select({
   );
 }
 
+export function Textarea({
+  error,
+  className,
+  ...rest
+}: ComponentProps<"textarea"> & { error?: boolean }) {
+  return (
+    <textarea
+      {...rest}
+      aria-invalid={error || undefined}
+      className={cx(CONTROL, "min-h-28 py-2.5", error ? BAD : OK, className)}
+    />
+  );
+}
+
+/**
+ * Label + control + алдаа/тайлбарыг нэг дор багцалсан жижиг wrapper.
+ * Формын хуудсууд дээр давтагдах 6 мөрийг нэг мөр болгоно.
+ */
+export function FieldRow({
+  id,
+  label,
+  hint,
+  error,
+  required,
+  className,
+  children,
+}: {
+  id: string;
+  label: string;
+  /** Алдаагүй үеийн тайлбар */
+  hint?: string;
+  /** Алдааны текст — байвал улаанаар гарна */
+  error?: string;
+  required?: boolean;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className={className}>
+      <Label htmlFor={id}>
+        {label}
+        {required && (
+          <span aria-hidden className="ml-0.5 text-danger">
+            *
+          </span>
+        )}
+      </Label>
+      {children}
+      {(error || hint) && <Hint error={Boolean(error)}>{error ?? hint}</Hint>}
+    </div>
+  );
+}
+
+export function Checkbox({
+  id,
+  checked,
+  onChange,
+  label,
+  description,
+  error,
+}: {
+  id: string;
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  label: ReactNode;
+  description?: string;
+  error?: boolean;
+}) {
+  return (
+    <div className="flex items-start gap-2.5">
+      <input
+        id={id}
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        aria-invalid={error || undefined}
+        className={cx(
+          "mt-0.5 size-4 shrink-0 rounded-[4px] accent-brand",
+          error ? "border-danger" : "border-line",
+        )}
+      />
+      <label htmlFor={id} className="text-body">
+        {label}
+        {description && (
+          <span className="mt-0.5 block text-small text-ink-2">{description}</span>
+        )}
+      </label>
+    </div>
+  );
+}
+
+/**
+ * Хүргэлт / төлбөрийн аргын сонголт — том дарах талбайтай радио карт.
+ * Баруун талд үнэ эсвэл тэмдэглэгээ гарна.
+ */
+export function RadioCard({
+  id,
+  name,
+  checked,
+  onChange,
+  label,
+  description,
+  meta,
+  icon,
+}: {
+  id: string;
+  name: string;
+  checked: boolean;
+  onChange: () => void;
+  label: string;
+  description?: string;
+  meta?: ReactNode;
+  icon?: ReactNode;
+}) {
+  return (
+    <label
+      htmlFor={id}
+      className={cx(
+        "flex cursor-pointer items-start gap-3 rounded-card border p-4 transition-colors",
+        checked
+          ? "border-brand bg-brand-tint"
+          : "border-line bg-white hover:bg-surface",
+      )}
+    >
+      <input
+        id={id}
+        type="radio"
+        name={name}
+        checked={checked}
+        onChange={onChange}
+        className="mt-0.5 size-4 shrink-0 accent-brand"
+      />
+      {icon && <span className="mt-px shrink-0 text-ink">{icon}</span>}
+      <span className="min-w-0 flex-1">
+        <span className="block text-body font-bold">{label}</span>
+        {description && (
+          <span className="mt-0.5 block text-small text-ink-2">{description}</span>
+        )}
+      </span>
+      {meta && (
+        <span className="shrink-0 text-small font-bold tabular-nums">{meta}</span>
+      )}
+    </label>
+  );
+}
+
 /** Дизайны "Тоо хэмжээ" алхамчлагч: − N + */
 export function QtyStepper({
   value,

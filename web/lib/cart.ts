@@ -202,13 +202,27 @@ export function useCart() {
  *   Хүргэлт     = 100,000₮-с дээш бол үнэгүй
  *   НӨАТ (10%)  = үнэд шингэсэн → subtotal − subtotal/1.1 → 27,236₮
  *   Нийт        = Барааны дүн + хүргэлт        → 299,600₮
+ *
+ * `shippingOverride` — checkout дээр хүргэлтийн арга сонгоход (шуурхай, салбараас авах)
+ * хүргэлтийн төлбөр өөрчлөгдөнө. Арифметик нэг эх сурвалжтай байхын тулд энд авна,
+ * харуулах давхаргад тооцоолохгүй.
  */
-export function computeTotals(lines: ResolvedLine[], couponRate = 0): CartTotals {
+export function computeTotals(
+  lines: ResolvedLine[],
+  couponRate = 0,
+  shippingOverride?: number,
+): CartTotals {
   const subtotal = lines.reduce((sum, l) => sum + l.lineTotal, 0);
   const savings = lines.reduce((sum, l) => sum + l.lineSavings, 0);
   const couponSavings = Math.round(subtotal * couponRate);
-  const freeShipping = subtotal >= FREE_SHIPPING_FROM;
-  const shipping = subtotal === 0 || freeShipping ? 0 : SHIPPING_FEE;
+  const standardFree = subtotal >= FREE_SHIPPING_FROM;
+  const shipping =
+    shippingOverride !== undefined
+      ? shippingOverride
+      : subtotal === 0 || standardFree
+        ? 0
+        : SHIPPING_FEE;
+  const freeShipping = shipping === 0 && subtotal > 0;
   const vat = Math.round(subtotal - subtotal / (1 + VAT_RATE));
   return {
     subtotal,

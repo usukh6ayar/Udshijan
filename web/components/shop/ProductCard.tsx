@@ -7,13 +7,15 @@ import { Placeholder } from "@/components/Placeholder";
 import { Badge, Rating } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { useCart } from "@/lib/cart";
+import { useWishlist } from "@/lib/wishlist";
 import { cx, discountPercent, money } from "@/lib/format";
 import type { Product } from "@/lib/data/types";
 
 export function ProductCard({ product }: { product: Product }) {
   const { add } = useCart();
-  const [wished, setWished] = useState(false);
+  const { has, toggle } = useWishlist();
   const [added, setAdded] = useState(false);
+  const wished = has(product.slug);
 
   const off = discountPercent(product.price, product.compareAt);
   const soldOut = product.stock === 0;
@@ -48,8 +50,10 @@ export function ProductCard({ product }: { product: Product }) {
           </div>
           <button
             type="button"
-            onClick={() => setWished((v) => !v)}
-            aria-label="Хүслийн жагсаалтад нэмэх"
+            onClick={() => toggle(product.slug)}
+            aria-label={
+              wished ? "Хүслийн жагсаалтаас хасах" : "Хүслийн жагсаалтад нэмэх"
+            }
             aria-pressed={wished}
             className="pointer-events-auto flex size-8 items-center justify-center rounded-full border border-line bg-white text-ink shadow-sm hover:bg-surface"
           >
