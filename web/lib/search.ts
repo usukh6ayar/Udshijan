@@ -2,16 +2,19 @@ import { categories } from "./data/catalog";
 import { products } from "./data/products";
 import type { Product } from "./data/types";
 
-/** Хайлтын landing дээр гарах түгээмэл хайлтууд */
+/**
+ * Хайлтын landing дээр гарах түгээмэл хайлтууд.
+ * Үг бүр илэрц буцаадаг байх ёстой — хоосон илэрц рүү хөтөлдөг чип тавихгүй.
+ */
 export const POPULAR_QUERIES = [
   "футболк",
-  "чихэвч",
+  "цамц",
   "куртка",
+  "чихэвч",
   "арьс арчилгаа",
   "гутал",
   "цүнх",
   "гал тогоо",
-  "хямдрал",
 ];
 
 function normalize(value: string): string {
