@@ -81,7 +81,7 @@ export function useWishlist() {
 
   /* Сагстай ижил давхарга — localStorage зөвхөн slug хадгалдаг тул Product-ыг
      Route Handler-ээс татна. */
-  const productCache = useProductCache(slugs);
+  const { cache: productCache, ready } = useProductCache(slugs);
 
   const resolved = useMemo<Product[]>(
     () =>
@@ -96,8 +96,8 @@ export function useWishlist() {
     slugs,
     resolved,
     count: resolved.length,
-    /** slug байгаа ч Product нь хараахан ирээгүй — «хоосон жагсаалт»-аас ялгана */
-    loading: slugs.length > 0 && productCache.size === 0,
+    /** Сагстай ижил дүрэм — дэлгэрэнгүйг `lib/cart.ts`-ээс үзнэ үү */
+    loading: slugs.length > 0 && resolved.length === 0 && !ready,
     has,
     toggle,
     remove,

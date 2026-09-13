@@ -152,7 +152,9 @@ export function useCart() {
 
   /* Бүтээгдэхүүний мэдээлэл DB-д байгаа тул энэ дериваци синхрон байж чадахгүй.
      localStorage зөвхөн slug хадгална, Product-ыг Route Handler-ээс татна. */
-  const productCache = useProductCache(data.lines.map((l) => l.slug));
+  const { cache: productCache, ready } = useProductCache(
+    data.lines.map((l) => l.slug),
+  );
 
   const resolved = useMemo<ResolvedLine[]>(
     () =>
@@ -190,8 +192,13 @@ export function useCart() {
     resolved,
     count,
     totals,
-    /** Мөр байгаа ч Product нь хараахан ирээгүй — «хоосон сагс»-наас ялгана */
-    loading: data.lines.length > 0 && productCache.size === 0,
+    /**
+     * Мөр байгаа ч харуулах юм алга, бас хүсэлт дуусаагүй — «хоосон сагс»-наас
+     * ялгана. Хүсэлт дууссаны дараа (алдаатай ч бай) skeleton-оос гарна.
+     * `resolved.length` нөхцөл нь шинэ бараа нэмэхэд ажиллаж байгаа сагс
+     * skeleton болж анивчихаас сэргийлнэ — мэдэгдэж буй мөрүүд хэвээр харагдана.
+     */
+    loading: data.lines.length > 0 && resolved.length === 0 && !ready,
     add,
     setQty,
     remove,

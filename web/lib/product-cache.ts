@@ -6,12 +6,28 @@ import type { Product } from "./data/types";
 /** Тогтвортой хоосон утга — useMemo-гийн хамаарал шаардлагагүй байхад өөрчлөгдөхгүй */
 const EMPTY: Map<string, Product> = new Map();
 
+export type ProductCache = {
+  cache: Map<string, Product>;
+  /**
+   * Одоогийн slug-уудын хүсэлт дууссан эсэх — АМЖИЛТТАЙ ч, АЛДААТАЙ ч дуусахад
+   * үнэн болно. Сүлжээ тасарсан үед эсвэл slug нь DB-д байхгүй болсон үед
+   * хэрэглэгч мөнхийн skeleton дээр гацахгүй байх нь энэ талбарын гол зорилго.
+   */
+  ready: boolean;
+};
+
+type State = {
+  /** Кэш аль slug-уудын хүсэлтээс үүссэн бэ */
+  key: string;
+  cache: Map<string, Product>;
+};
+
 /**
  * Сагс/хүслийн жагсаалтад буй slug-уудын Product мэдээллийг сервертээс татаж
  * кэшэлнэ. localStorage зөвхөн slug хадгалдаг тул энэ давхарга шаардлагатай.
  */
-export function useProductCache(slugs: string[]): Map<string, Product> {
-  const [cache, setCache] = useState<Map<string, Product>>(EMPTY);
+export function useProductCache(slugs: string[]): ProductCache {
+  const [state, setState] = useState<State>({ key: "", cache: EMPTY });
   const key = slugs.slice().sort().join(",");
 
   useEffect(() => {
@@ -24,10 +40,12 @@ export function useProductCache(slugs: string[]): Map<string, Product> {
       .then((r) => r.json() as Promise<Product[]>)
       .then((list) => {
         if (cancelled) return;
-        setCache(new Map(list.map((p) => [p.slug, p])));
+        setState({ key, cache: new Map(list.map((p) => [p.slug, p])) });
       })
       .catch(() => {
-        if (!cancelled) setCache(EMPTY);
+        /* Алдаа гарсан ч хүсэлт дууссан гэж тэмдэглэнэ. Өмнөх кэшийг хэвээр
+           үлдээнэ — устгавал өмнө нь харагдаж байсан сагс хоосорно. */
+        if (!cancelled) setState((prev) => ({ key, cache: prev.cache }));
       });
 
     return () => {
@@ -35,5 +53,8 @@ export function useProductCache(slugs: string[]): Map<string, Product> {
     };
   }, [key]);
 
-  return key ? cache : EMPTY;
+  return {
+    cache: key ? state.cache : EMPTY,
+    ready: key === "" || state.key === key,
+  };
 }
