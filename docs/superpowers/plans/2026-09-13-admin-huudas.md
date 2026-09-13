@@ -1660,10 +1660,30 @@ export function validateProductForm(input: ProductFormInput): {
 }
 ```
 
+**Хэрэгжүүлэх үед нэмэгдсэн засварууд** (`4163c04` commit-д орсон):
+`positiveInt` нь `Number("") === 0` тул хоосон утгыг чимээгүй 0 болгож
+байсныг зассан — одоо зөвхөн `/^\d+$/` таарсан цэвэр бүхэл тоо хүлээн авна.
+`rating`-д тусдаа хоосон шалгалт нэмсэн.
+
+**`section`-ийн шалгалт (mapper хяналтаас гарсан):** формд `section` нь чөлөөт
+текст талбар бөгөөд шалгалтгүй байсан. Админ `"Eregtei"` гэж бичвэл DB-д
+цэвэр хадгалагдаж, бүтээгдэхүүн `/c/huvtsas?section=eregtei` шүүлтээс чимээгүй
+алга болно. `validateProductForm`-д нэмнэ:
+
+```ts
+  const section = (input.section ?? "").trim();
+  if (section && section !== "eregtei" && section !== "emegtei") {
+    errors.section = "Зөвхөн eregtei эсвэл emegtei байна";
+  }
+```
+
+Хоосон утга зөвшөөрөгдөнө — хүйсгүй бүтээгдэхүүн байж болно. `mapper.ts` ч
+мөн адил шалгадаг (давхар хамгаалалт: шууд SQL засварыг барина).
+
 - [ ] **Step 4: Тест өнгөрөхийг батлах**
 
 Run: `cd web && npm test`
-Expected: PASS, 5 тест.
+Expected: PASS.
 
 - [ ] **Step 5: Server Actions бичих**
 
@@ -1825,7 +1845,7 @@ export default function AdminPage() {
 
 import { useActionState } from "react";
 import { Button } from "@/components/ui/Button";
-import { Input, Textarea } from "@/components/ui/Field";
+import { Input, Select, Textarea } from "@/components/ui/Field";
 import { saveProduct } from "@/lib/admin/actions";
 import type { Product } from "@/lib/data/types";
 
@@ -1844,7 +1864,11 @@ export function ProductForm({ product }: { product?: Product }) {
       <Input name="titleFull" defaultValue={v?.titleFull} placeholder="Бүтэн нэр" />
       <Input name="category" defaultValue={v?.category} placeholder="Ангилал" error={Boolean(errors?.category)} />
       <Input name="subcategory" defaultValue={v?.subcategory} placeholder="Дэд ангилал" error={Boolean(errors?.subcategory)} />
-      <Input name="section" defaultValue={v?.section ?? ""} placeholder="eregtei / emegtei" />
+      <Select name="section" defaultValue={v?.section ?? ""}>
+        <option value="">— хүйсгүй —</option>
+        <option value="eregtei">Эрэгтэй</option>
+        <option value="emegtei">Эмэгтэй</option>
+      </Select>
       <Input name="price" defaultValue={v?.price} placeholder="Үнэ" error={Boolean(errors?.price)} />
       {errors?.price ? <p className="text-small text-danger">{errors.price}</p> : null}
 
