@@ -29,11 +29,21 @@ export default async function CategoryPage(props: PageProps<"/c/[slug]">) {
   const category = categoryBySlug(slug);
   if (!category) notFound();
 
-  /* Мобайл толгойн гарчиг нь бүрхүүлийн дотор байдаг тул зөвхөн param-аас
-     мэдэгдэх ангиллын нэрийг авна — `?section=` нь runtime өгөгдөл учраас
-     түүгээр тодотгосон гарчгийг Suspense-ийн дотор тооцно. */
+  /* `?section=` нь runtime өгөгдөл тул мобайл толгойн гарчгийг ч Suspense-ийн
+     дотор тооцно. Fallback нь ангиллын энгийн нэр — section ирэнгүүт бүтэн
+     нэр («Эрэгтэй хувцас») болж солигдоно, бүрхүүл статикаараа үлдэнэ. */
   return (
-    <Shell mobileTitle={category.name} mobileActions="search">
+    <Shell
+      mobileTitle={
+        <Suspense fallback={category.name}>
+          <CategoryTitle
+            category={category}
+            searchParams={props.searchParams}
+          />
+        </Suspense>
+      }
+      mobileActions="search"
+    >
       <Suspense fallback={null}>
         <CategoryProducts
           category={category}
@@ -42,6 +52,31 @@ export default async function CategoryPage(props: PageProps<"/c/[slug]">) {
       </Suspense>
     </Shell>
   );
+}
+
+type SearchParams = PageProps<"/c/[slug]">["searchParams"];
+
+/** `?section=` утга зөвшөөрөгдсөн эсэх */
+function sectionOf(search: Awaited<SearchParams>): string | null {
+  const raw = search.section;
+  return typeof raw === "string" && raw in SECTIONS ? raw : null;
+}
+
+function titleOf(category: Category, section: string | null): string {
+  return section
+    ? `${SECTIONS[section]} ${category.name.toLowerCase()}`
+    : category.name;
+}
+
+/** Мобайл толгойн гарчиг — section-оор тодотгосон бүтэн нэр */
+async function CategoryTitle({
+  category,
+  searchParams,
+}: {
+  category: Category;
+  searchParams: SearchParams;
+}) {
+  return titleOf(category, sectionOf(await searchParams));
 }
 
 /**
@@ -54,23 +89,15 @@ async function CategoryProducts({
   searchParams,
 }: {
   category: Category;
-  searchParams: PageProps<"/c/[slug]">["searchParams"];
+  searchParams: SearchParams;
 }) {
-  const search = await searchParams;
-  const rawSection = search.section;
-  const section = typeof rawSection === "string" && rawSection in SECTIONS
-    ? rawSection
-    : null;
-
-  const title = section
-    ? `${SECTIONS[section]} ${category.name.toLowerCase()}`
-    : category.name;
+  const section = sectionOf(await searchParams);
 
   return (
     <CategoryView
       category={category}
       section={section}
-      title={title}
+      title={titleOf(category, section)}
       products={await allProducts()}
     />
   );
