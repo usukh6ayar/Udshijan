@@ -6,15 +6,20 @@ function opt<T>(value: T | null): T | undefined {
   return value === null ? undefined : value;
 }
 
+/** DB-д гэмтэлтэй утга байсан ч Product-ийн нарийн төрлийг зөрчихгүй */
+function section(value: string | null): Product["section"] {
+  return value === "eregtei" || value === "emegtei" ? value : null;
+}
+
 /**
  * DB мөрийг Product гэрээ рүү хөрвүүлнэ.
  *
- * stock эрх мэдэлтэй: stock === 0 бол бүх хэмжээ дууссан гэж үзнэ.
+ * stock эрх мэдэлтэй: stock <= 0 бол бүх хэмжээ дууссан гэж үзнэ.
  * Ингэснээр DB-д зөрүүтэй JSON байсан ч дэлгүүр буруу үлдэгдэл харуулахгүй.
  */
 export function rowToProduct(row: ProductRow): Product {
   const sizes =
-    row.stock === 0
+    row.stock <= 0
       ? row.sizes.map((s) => ({ ...s, inStock: false }))
       : row.sizes;
 
@@ -26,7 +31,7 @@ export function rowToProduct(row: ProductRow): Product {
     titleFull: opt(row.titleFull),
     category: row.category,
     subcategory: row.subcategory,
-    section: row.section as Product["section"],
+    section: section(row.section),
     price: row.price,
     compareAt: opt(row.compareAt),
     rating: row.rating,

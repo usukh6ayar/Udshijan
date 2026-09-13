@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { rowToProduct } from "./mapper";
 import type { ProductRow } from "@/drizzle/schema";
+import type { Product } from "./types";
 
 const baseRow: ProductRow = {
   slug: "test-bar",
@@ -33,14 +34,40 @@ const baseRow: ProductRow = {
 };
 
 describe("rowToProduct", () => {
-  it("null утгуудыг undefined болгож Product хэлбэрт оруулна", () => {
+  it("DB мөрийг бүрэн Product болгож хөрвүүлнэ", () => {
     const product = rowToProduct(baseRow);
 
-    expect(product.slug).toBe("test-bar");
-    expect(product.titleFull).toBeUndefined();
-    expect(product.compareAt).toBeUndefined();
-    expect(product.wholesale).toBeUndefined();
-    expect(product.badges).toBeUndefined();
+    const expected: Product = {
+      slug: "test-bar",
+      sku: "UDS-T-1",
+      brand: "UDS Basic",
+      title: "Тест бараа",
+      titleFull: undefined,
+      category: "huvtsas",
+      subcategory: "futbolk",
+      section: "eregtei",
+      price: 39900,
+      compareAt: undefined,
+      rating: 4.5,
+      reviewCount: 10,
+      soldCount: undefined,
+      colors: [{ name: "Хар", hex: "#17171A" }],
+      sizes: [
+        { label: "S", inStock: true },
+        { label: "M", inStock: false },
+      ],
+      stock: 5,
+      wholesale: undefined,
+      imageLabel: "футболк",
+      imageCount: 3,
+      description: "Тайлбар",
+      descriptionNotes: undefined,
+      specs: [{ label: "Брэнд", value: "UDS Basic" }],
+      badges: undefined,
+      featured: undefined,
+    };
+
+    expect(product).toEqual(expected);
   });
 
   it("stock > 0 үед sizes.inStock-ийг хэвээр үлдээнэ", () => {
@@ -58,10 +85,24 @@ describe("rowToProduct", () => {
     expect(product.sizes.every((s) => s.inStock === false)).toBe(true);
   });
 
+  it("сөрөг үлдэгдлийг ч дууссан гэж үзнэ", () => {
+    const product = rowToProduct({ ...baseRow, stock: -3 });
+    expect(product.sizes.every((s) => s.inStock === false)).toBe(true);
+  });
+
   it("section-ийг Product-ийн нарийн төрөл рүү хөрвүүлнэ", () => {
     expect(rowToProduct({ ...baseRow, section: "emegtei" }).section).toBe(
       "emegtei",
     );
     expect(rowToProduct({ ...baseRow, section: null }).section).toBeNull();
+  });
+
+  it("танихгүй section утгыг null болгоно", () => {
+    expect(
+      rowToProduct({ ...baseRow, section: "Eregtei" }).section,
+    ).toBeNull();
+    expect(
+      rowToProduct({ ...baseRow, section: "bagachuud" }).section,
+    ).toBeNull();
   });
 });
