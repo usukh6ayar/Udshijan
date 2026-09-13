@@ -9,8 +9,8 @@ import { Section, SectionHeader } from "@/components/shop/Section";
 import { ProductGrid } from "@/components/shop/ProductCard";
 import { SearchView } from "@/components/shop/SearchView";
 import { categories } from "@/lib/data/catalog";
-import { productsByFeature } from "@/lib/data/products";
-import { POPULAR_QUERIES } from "@/lib/search";
+import { allProducts, productsByFeature } from "@/lib/data/products";
+import { POPULAR_QUERIES, searchProducts } from "@/lib/search";
 import { num } from "@/lib/format";
 
 function queryOf(search: Record<string, string | string[] | undefined>): string {
@@ -32,7 +32,7 @@ export default async function SearchPage(props: PageProps<"/hailt">) {
     <Shell mobileTitle="Хайлт" mobileActions="cart">
       {query ? (
         <Suspense fallback={null}>
-          <SearchView query={query} />
+          <SearchResults query={query} />
         </Suspense>
       ) : (
         <SearchLanding />
@@ -41,9 +41,18 @@ export default async function SearchPage(props: PageProps<"/hailt">) {
   );
 }
 
+/**
+ * Хайлтыг сервер тал гүйцэтгэж, илэрцийг клиент талын `SearchView` рүү өгнө.
+ * DB-ийн хүлээлт Suspense-ийн дотор байхаар тусдаа компонент болгов.
+ */
+async function SearchResults({ query }: { query: string }) {
+  const results = searchProducts(await allProducts(), query);
+  return <SearchView query={query} results={results} />;
+}
+
 /** Хайлтын үг оруулаагүй үед — хайх талбар, түгээмэл хайлт, ангилалууд */
-function SearchLanding() {
-  const bestsellers = productsByFeature("bestseller");
+async function SearchLanding() {
+  const bestsellers = await productsByFeature("bestseller");
 
   return (
     <>

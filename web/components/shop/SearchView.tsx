@@ -1,20 +1,27 @@
 "use client";
 
-import { useMemo } from "react";
 import { SearchX } from "lucide-react";
 import Link from "next/link";
 import { ButtonLink } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ProductBrowser } from "./ProductBrowser";
-import { POPULAR_QUERIES, searchProducts } from "@/lib/search";
+import { POPULAR_QUERIES } from "@/lib/search";
+import type { Product } from "@/lib/data/types";
 
-/** `/hailt?q=…` — илэрцийг ангилалын хуудастай ижил шүүлтүүртэйгээр харуулна */
-export function SearchView({ query }: { query: string }) {
-  const pool = useMemo(() => searchProducts(query), [query]);
-
+/**
+ * `/hailt?q=…` — илэрцийг ангилалын хуудастай ижил шүүлтүүртэйгээр харуулна.
+ * Хайлтыг сервер тал хийж, илэрцийг prop-оор дамжуулна.
+ */
+export function SearchView({
+  query,
+  results,
+}: {
+  query: string;
+  results: Product[];
+}) {
   return (
     <ProductBrowser
-      pool={pool}
+      pool={results}
       basePath="/hailt"
       keepParams={{ q: query }}
       title={`«${query}» хайлтын илэрц`}

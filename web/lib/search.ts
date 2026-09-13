@@ -1,5 +1,4 @@
 import { categories } from "./data/catalog";
-import { products } from "./data/products";
 import type { Product } from "./data/types";
 
 /**
@@ -44,7 +43,7 @@ function haystack(p: Product): string {
  * Хоосон зайгаар тусгаарласан үг бүрийг ТУС ТУСАД нь агуулж байх ёстой
  * (ж: "хар футболк" → хар ба футболк хоёулаа таарна).
  */
-export function searchProducts(query: string): Product[] {
+export function searchProducts(products: Product[], query: string): Product[] {
   const terms = normalize(query).split(/\s+/).filter(Boolean);
   if (terms.length === 0) return [];
 
