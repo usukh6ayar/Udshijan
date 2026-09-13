@@ -29,4 +29,9 @@ describe("session гарын үсэг", () => {
     expect(verifySession(SECRET, "хог")).toBe(false);
     expect(verifySession(SECRET, "")).toBe(false);
   });
+
+  it("string биш утгыг алдаа шидэлгүй татгалзана", () => {
+    expect(verifySession(SECRET, undefined as unknown as string)).toBe(false);
+    expect(verifySession(SECRET, null as unknown as string)).toBe(false);
+  });
 });

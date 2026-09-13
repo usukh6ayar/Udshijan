@@ -13,6 +13,8 @@ export function signSession(secret: string, expiresAt: number): string {
 }
 
 export function verifySession(secret: string, token: string): boolean {
+  if (typeof token !== "string") return false;
+
   const dot = token.indexOf(".");
   if (dot <= 0) return false;
 
