@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useSyncExternalStore } from "react";
-import { productBySlug } from "./data/products";
+import { useProductCache } from "./product-cache";
 import type { Product } from "./data/types";
 
 export type CartLine = {
@@ -150,10 +150,14 @@ export function useCart() {
 
   const removeCoupon = useCallback(() => save({ ...load(), coupon: null }), []);
 
+  /* Бүтээгдэхүүний мэдээлэл DB-д байгаа тул энэ дериваци синхрон байж чадахгүй.
+     localStorage зөвхөн slug хадгална, Product-ыг Route Handler-ээс татна. */
+  const productCache = useProductCache(data.lines.map((l) => l.slug));
+
   const resolved = useMemo<ResolvedLine[]>(
     () =>
       data.lines.flatMap((line) => {
-        const product = productBySlug(line.slug);
+        const product = productCache.get(line.slug);
         if (!product) return [];
         return [
           {
@@ -166,7 +170,7 @@ export function useCart() {
           },
         ];
       }),
-    [data.lines],
+    [data.lines, productCache],
   );
 
   const couponRate = data.coupon ? (COUPONS[data.coupon] ?? 0) : 0;
@@ -186,6 +190,8 @@ export function useCart() {
     resolved,
     count,
     totals,
+    /** Мөр байгаа ч Product нь хараахан ирээгүй — «хоосон сагс»-наас ялгана */
+    loading: data.lines.length > 0 && productCache.size === 0,
     add,
     setQty,
     remove,

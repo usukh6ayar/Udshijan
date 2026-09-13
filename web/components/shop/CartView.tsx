@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowRight, ShoppingCart, Truck, X } from "lucide-react";
 import { useState } from "react";
 import { Placeholder } from "@/components/Placeholder";
-import { Alert } from "@/components/ui/Badge";
+import { Alert, Skeleton } from "@/components/ui/Badge";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input, QtyStepper } from "@/components/ui/Field";
@@ -13,7 +13,21 @@ import { lineKey, useCart, type ResolvedLine } from "@/lib/cart";
 import { money } from "@/lib/format";
 
 export function CartView() {
-  const { resolved, totals, coupon, couponRate } = useCart();
+  const { resolved, totals, coupon, couponRate, loading } = useCart();
+
+  /* Бараа нь сервертээс ирж байхад «сагс хоосон» гэж харуулбал хэрэглэгч
+     сагсаа алдсан мэт ойлгоно — тиймээс хүлээлтийн төлөвийг тусад нь гаргана. */
+  if (loading) {
+    return (
+      <div className="container-uds py-6 lg:py-10">
+        <h1 className="text-h1">Таны сагс</h1>
+        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-8">
+          <Skeleton className="h-[280px] border border-line" />
+          <Skeleton className="h-[240px] border border-line" />
+        </div>
+      </div>
+    );
+  }
 
   if (resolved.length === 0) {
     return (

@@ -14,7 +14,7 @@ import {
   Zap,
 } from "lucide-react";
 import { Placeholder } from "@/components/Placeholder";
-import { Alert } from "@/components/ui/Badge";
+import { Alert, Skeleton } from "@/components/ui/Badge";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import {
@@ -184,7 +184,7 @@ function makeOrderNumber(): string {
 }
 
 export function CheckoutView() {
-  const { resolved, couponRate, clear } = useCart();
+  const { resolved, couponRate, clear, loading } = useCart();
   const [form, setForm] = useState<FormState>(INITIAL);
   const [errors, setErrors] = useState<Errors>({});
   const [submitted, setSubmitted] = useState(false);
@@ -288,6 +288,19 @@ export function CheckoutView() {
               Нүүр хуудас руу буцах
             </ButtonLink>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Сагсны бараа ачаалж байна ──────────────────────────────────────── */
+  if (loading) {
+    return (
+      <div className="container-uds py-6 lg:py-10">
+        <h1 className="text-h1">Захиалга баталгаажуулах</h1>
+        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-8">
+          <Skeleton className="h-[420px] border border-line" />
+          <Skeleton className="h-[240px] border border-line" />
         </div>
       </div>
     );
