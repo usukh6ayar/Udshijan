@@ -5,28 +5,33 @@ import { ProductDetail } from "@/components/shop/ProductDetail";
 import { ProductGrid } from "@/components/shop/ProductCard";
 import { SectionHeader } from "@/components/shop/Section";
 import { categoryBySlug } from "@/lib/data/catalog";
-import { products, productBySlug, relatedProducts } from "@/lib/data/products";
+import {
+  allProductSlugs,
+  productBySlug,
+  relatedProducts,
+} from "@/lib/data/products";
 
-export function generateStaticParams() {
-  return products.map((p) => ({ slug: p.slug }));
+export async function generateStaticParams() {
+  const slugs = await allProductSlugs();
+  return slugs.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata(
   props: PageProps<"/p/[slug]">,
 ): Promise<Metadata> {
   const { slug } = await props.params;
-  const product = productBySlug(slug);
+  const product = await productBySlug(slug);
   if (!product) return { title: "Бүтээгдэхүүн" };
   return { title: product.titleFull ?? product.title, description: product.description };
 }
 
 export default async function ProductPage(props: PageProps<"/p/[slug]">) {
   const { slug } = await props.params;
-  const product = productBySlug(slug);
+  const product = await productBySlug(slug);
   if (!product) notFound();
 
   const category = categoryBySlug(product.category);
-  const related = relatedProducts(product);
+  const related = await relatedProducts(product);
 
   return (
     <Shell

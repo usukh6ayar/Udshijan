@@ -9,9 +9,9 @@ import { categories } from "@/lib/data/catalog";
 import { productsByFeature } from "@/lib/data/products";
 import { num } from "@/lib/format";
 
-export default function HomePage() {
-  const bestsellers = productsByFeature("bestseller");
-  const newArrivals = productsByFeature("new");
+export default async function HomePage() {
+  const bestsellers = await productsByFeature("bestseller");
+  const newArrivals = await productsByFeature("new");
 
   return (
     <Shell>

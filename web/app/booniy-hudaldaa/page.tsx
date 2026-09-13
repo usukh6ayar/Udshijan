@@ -15,7 +15,7 @@ import { Shell } from "@/components/layout/Shell";
 import { Accordion } from "@/components/ui/Accordion";
 import { ButtonLink } from "@/components/ui/Button";
 import { WholesaleForm } from "@/components/shop/WholesaleForm";
-import { products } from "@/lib/data/products";
+import { allProducts } from "@/lib/data/products";
 import { discountPercent, money, num } from "@/lib/format";
 
 export const metadata: Metadata = {
@@ -84,8 +84,8 @@ const FAQS = [
   },
 ];
 
-export default function WholesalePage() {
-  const wholesaleProducts = products.filter((p) => p.wholesale);
+export default async function WholesalePage() {
+  const wholesaleProducts = (await allProducts()).filter((p) => p.wholesale);
 
   return (
     <Shell mobileTitle="Бөөний худалдаа" mobileActions="cart">
