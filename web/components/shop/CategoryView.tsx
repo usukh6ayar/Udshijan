@@ -2,26 +2,28 @@
 
 import { useMemo } from "react";
 import { ProductBrowser } from "./ProductBrowser";
-import { products as allProducts } from "@/lib/data/products";
-import type { Category } from "@/lib/data/types";
+import type { Category, Product } from "@/lib/data/types";
 
 /** Ангилалын хуудас — `ProductBrowser`-ыг тухайн ангилалын бараагаар хязгаарлана */
 export function CategoryView({
   category,
   section,
   title,
+  products,
 }: {
   category: Category;
   section: string | null;
   title: string;
+  /** Бүх бараа — DB-ээс сервер тал татаж өгнө */
+  products: Product[];
 }) {
   const pool = useMemo(
     () =>
-      allProducts.filter(
+      products.filter(
         (p) =>
           p.category === category.slug && (!section || p.section === section),
       ),
-    [category.slug, section],
+    [products, category.slug, section],
   );
 
   return (

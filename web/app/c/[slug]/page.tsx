@@ -4,6 +4,8 @@ import { Suspense } from "react";
 import { Shell } from "@/components/layout/Shell";
 import { CategoryView } from "@/components/shop/CategoryView";
 import { categories, categoryBySlug } from "@/lib/data/catalog";
+import { allProducts } from "@/lib/data/products";
+import type { Category } from "@/lib/data/types";
 
 const SECTIONS: Record<string, string> = {
   eregtei: "Эрэгтэй",
@@ -40,8 +42,32 @@ export default async function CategoryPage(props: PageProps<"/c/[slug]">) {
   return (
     <Shell mobileTitle={title} mobileActions="search">
       <Suspense fallback={null}>
-        <CategoryView category={category} section={section} title={title} />
+        <CategoryProducts category={category} section={section} title={title} />
       </Suspense>
     </Shell>
+  );
+}
+
+/**
+ * `hailt/page.tsx`-тэй ижил хэв маяг: DB-ийн хүлээлтийг Suspense-ийн ДОТОР
+ * байлгахын тулд await хийх хэсгийг тусдаа async компонент болгов. Ингэснээр
+ * хуудасны бүрхүүл шууд урсан гарна.
+ */
+async function CategoryProducts({
+  category,
+  section,
+  title,
+}: {
+  category: Category;
+  section: string | null;
+  title: string;
+}) {
+  return (
+    <CategoryView
+      category={category}
+      section={section}
+      title={title}
+      products={await allProducts()}
+    />
   );
 }
