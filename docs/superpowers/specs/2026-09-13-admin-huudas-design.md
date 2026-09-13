@@ -48,9 +48,10 @@ mapper / normalize          ← DB төрөл энд төгсөнө
   ↓
 Product (lib/data/types.ts)
   ↓
-lib/data/products.ts        ← экспортын гарын үсэг хэвээр
+lib/data/products.ts        ← экспорт async болно
   ↓
-одоогийн дэлгүүрийн компонентууд   ← гар хүрэхгүй
+сервер талын хуудсууд        ← зөвхөн await нэмнэ
+клиент талын 4 модуль        ← тусад нь шилжүүлнэ, доор үз
 ```
 
 `productBySlug()`, `productsByFeature()`, `relatedProducts()` гурав одоогийн
