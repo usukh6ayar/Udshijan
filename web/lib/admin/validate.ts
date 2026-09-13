@@ -45,5 +45,10 @@ export function validateProductForm(input: ProductFormInput): {
     errors.rating = "Үнэлгээ 0–5 хооронд байна";
   }
 
+  const section = (input.section ?? "").trim();
+  if (section && section !== "eregtei" && section !== "emegtei") {
+    errors.section = "Зөвхөн eregtei эсвэл emegtei байна";
+  }
+
   return { errors };
 }

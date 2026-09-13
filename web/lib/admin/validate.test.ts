@@ -57,4 +57,18 @@ describe("validateProductForm", () => {
     expect(validateProductForm({ ...valid, price: "1e5" }).errors.price).toBeTruthy();
     expect(validateProductForm({ ...valid, stock: "5.5" }).errors.stock).toBeTruthy();
   });
+
+  it("зөв section утгыг хүлээн авна", () => {
+    expect(validateProductForm({ ...valid, section: "eregtei" }).errors).toEqual({});
+    expect(validateProductForm({ ...valid, section: "emegtei" }).errors).toEqual({});
+  });
+
+  it("хоосон section-ийг зөвшөөрнө", () => {
+    expect(validateProductForm({ ...valid, section: "" }).errors).toEqual({});
+  });
+
+  it("танихгүй section утгыг татгалзана", () => {
+    expect(validateProductForm({ ...valid, section: "Eregtei" }).errors.section).toBeTruthy();
+    expect(validateProductForm({ ...valid, section: "bagachuud" }).errors.section).toBeTruthy();
+  });
 });
