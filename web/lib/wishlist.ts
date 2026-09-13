@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useSyncExternalStore } from "react";
-import { productBySlug } from "./data/products";
+import { useProductCache } from "./product-cache";
 import type { Product } from "./data/types";
 
 const STORAGE_KEY = "udshijan.wishlist.v1";
@@ -79,14 +79,28 @@ export function useWishlist() {
 
   const clear = useCallback(() => save([]), []);
 
+  /* Сагстай ижил давхарга — localStorage зөвхөн slug хадгалдаг тул Product-ыг
+     Route Handler-ээс татна. */
+  const productCache = useProductCache(slugs);
+
   const resolved = useMemo<Product[]>(
     () =>
       slugs.flatMap((slug) => {
-        const product = productBySlug(slug);
+        const product = productCache.get(slug);
         return product ? [product] : [];
       }),
-    [slugs],
+    [slugs, productCache],
   );
 
-  return { slugs, resolved, count: resolved.length, has, toggle, remove, clear };
+  return {
+    slugs,
+    resolved,
+    count: resolved.length,
+    /** slug байгаа ч Product нь хараахан ирээгүй — «хоосон жагсаалт»-аас ялгана */
+    loading: slugs.length > 0 && productCache.size === 0,
+    has,
+    toggle,
+    remove,
+    clear,
+  };
 }

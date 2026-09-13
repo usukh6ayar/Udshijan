@@ -2,6 +2,7 @@
 
 import { Heart } from "lucide-react";
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
+import { Skeleton } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ProductGrid } from "./ProductCard";
@@ -10,7 +11,7 @@ import { useWishlist } from "@/lib/wishlist";
 import { num } from "@/lib/format";
 
 export function WishlistView() {
-  const { resolved, count, clear } = useWishlist();
+  const { resolved, count, clear, loading } = useWishlist();
   const { add } = useCart();
 
   /** Үлдэгдэлтэй бараа бүрийг анхны өнгө/размераар нь сагсанд хийнэ */
@@ -40,11 +41,13 @@ export function WishlistView() {
         <div>
           <h1 className="hidden text-h1 lg:block">Хүслийн жагсаалт</h1>
           <p className="text-small text-ink-2 lg:mt-1.5">
-            {num(count)} бүтээгдэхүүн хадгалсан
+            {loading
+              ? "Ачаалж байна…"
+              : `${num(count)} бүтээгдэхүүн хадгалсан`}
           </p>
         </div>
 
-        {count > 0 && (
+        {!loading && count > 0 && (
           <div className="flex flex-wrap gap-3">
             <Button onClick={addAll} disabled={available === 0}>
               Бүгдийг сагсанд нэмэх
@@ -57,7 +60,15 @@ export function WishlistView() {
       </div>
 
       <div className="mt-6">
-        {count === 0 ? (
+        {/* Бараа татагдаж байхад «жагсаалт хоосон» гэж харуулбал хадгалсан
+            бараагаа алдсан мэт ойлгогдоно — хүлээлтийн төлөвийг тусад нь гаргав. */}
+        {loading ? (
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-5">
+            {Array.from({ length: 4 }, (_, i) => (
+              <Skeleton key={i} className="h-[320px] border border-line" />
+            ))}
+          </div>
+        ) : count === 0 ? (
           <div className="rounded-card border border-line bg-white">
             <EmptyState
               icon={<Heart className="size-6" />}
