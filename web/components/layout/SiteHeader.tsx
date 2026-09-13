@@ -222,9 +222,24 @@ function MegaMenu({ onClose }: { onClose: () => void }) {
   );
 }
 
+/**
+ * Ангиллын мөр. `usePathname`-ыг Suspense-ийн дотор уншина — динамик param-тай
+ * замын статик бүрхүүл (ж: `/p/[slug]`) дээр pathname мэдэгдээгүй байдаг тул
+ * эс бөгөөс бүх бүрхүүл хоосорно. Fallback нь идэвхтэй холбоосгүй ижил мөр.
+ */
 export function CategoryNav() {
-  const pathname = usePathname();
+  return (
+    <Suspense fallback={<CategoryNavBar pathname="" />}>
+      <ActiveCategoryNav />
+    </Suspense>
+  );
+}
 
+function ActiveCategoryNav() {
+  return <CategoryNavBar pathname={usePathname()} />;
+}
+
+function CategoryNavBar({ pathname }: { pathname: string }) {
   return (
     <nav className="hidden border-b border-line bg-white lg:block">
       <div className="container-uds flex h-12 items-center justify-between">

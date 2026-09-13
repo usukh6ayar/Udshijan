@@ -10,8 +10,11 @@ type ShellProps = {
   /**
    * Мобайл дээр үндсэн толгойн оронд «← Гарчиг» мөр харуулна (1f — ангилал, бүтээгдэхүүн).
    * Дизайны 1f дэлгэц дээр эдгээр хуудсууд өөр толгойтой.
+   *
+   * ReactNode: PDP дээр гарчиг нь runtime param-аас хамаардаг тул `<Suspense>`
+   * ороосон компонент дамжуулах боломжтой байх ёстой.
    */
-  mobileTitle?: string;
+  mobileTitle?: ReactNode;
   /** Мобайл дээр баруун талд юу харуулах */
   mobileActions?: "search" | "cart";
   /** Доод sticky bar-т зай гаргах (PDP) */
@@ -53,7 +56,7 @@ function MobileSubHeader({
   title,
   actions,
 }: {
-  title: string;
+  title: ReactNode;
   actions: "search" | "cart";
 }) {
   return (

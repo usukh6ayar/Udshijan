@@ -25,20 +25,28 @@ export async function generateMetadata(
   return { title: query ? `«${query}» — хайлт` : "Хайлт" };
 }
 
-export default async function SearchPage(props: PageProps<"/hailt">) {
-  const query = queryOf(await props.searchParams);
-
+export default function SearchPage(props: PageProps<"/hailt">) {
   return (
     <Shell mobileTitle="Хайлт" mobileActions="cart">
-      {query ? (
-        <Suspense fallback={null}>
-          <SearchResults query={query} />
-        </Suspense>
-      ) : (
-        <SearchLanding />
-      )}
+      <Suspense fallback={null}>
+        <SearchBody searchParams={props.searchParams} />
+      </Suspense>
     </Shell>
   );
+}
+
+/**
+ * `searchParams` нь зөвхөн хүсэлтийн үед мэдэгддэг тул түүний уншилтыг (мөн
+ * түүнээс хамаарах салаалалтыг) Suspense-ийн дотор байлгана. Ингэснээр
+ * хуудасны бүрхүүл статикаар prerender хийгдэнэ.
+ */
+async function SearchBody({
+  searchParams,
+}: {
+  searchParams: PageProps<"/hailt">["searchParams"];
+}) {
+  const query = queryOf(await searchParams);
+  return query ? <SearchResults query={query} /> : <SearchLanding />;
 }
 
 /**

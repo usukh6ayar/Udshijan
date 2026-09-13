@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Cache Components: уншилтыг `use cache`-ээр кэшлэн, админы засвар
+  // `revalidateTag`-аар шууд түгдэг болгоно.
+  cacheComponents: true,
 };
 
 export default nextConfig;

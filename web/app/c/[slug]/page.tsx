@@ -26,10 +26,37 @@ export async function generateMetadata(
 
 export default async function CategoryPage(props: PageProps<"/c/[slug]">) {
   const { slug } = await props.params;
-  const search = await props.searchParams;
   const category = categoryBySlug(slug);
   if (!category) notFound();
 
+  /* Мобайл толгойн гарчиг нь бүрхүүлийн дотор байдаг тул зөвхөн param-аас
+     мэдэгдэх ангиллын нэрийг авна — `?section=` нь runtime өгөгдөл учраас
+     түүгээр тодотгосон гарчгийг Suspense-ийн дотор тооцно. */
+  return (
+    <Shell mobileTitle={category.name} mobileActions="search">
+      <Suspense fallback={null}>
+        <CategoryProducts
+          category={category}
+          searchParams={props.searchParams}
+        />
+      </Suspense>
+    </Shell>
+  );
+}
+
+/**
+ * `hailt/page.tsx`-тэй ижил хэв маяг: DB-ийн хүлээлт БА `searchParams`-ийн
+ * уншилтыг Suspense-ийн ДОТОР байлгахын тулд тусдаа async компонент болгов.
+ * Ингэснээр хуудасны бүрхүүл статикаар prerender хийгдэнэ.
+ */
+async function CategoryProducts({
+  category,
+  searchParams,
+}: {
+  category: Category;
+  searchParams: PageProps<"/c/[slug]">["searchParams"];
+}) {
+  const search = await searchParams;
   const rawSection = search.section;
   const section = typeof rawSection === "string" && rawSection in SECTIONS
     ? rawSection
@@ -39,29 +66,6 @@ export default async function CategoryPage(props: PageProps<"/c/[slug]">) {
     ? `${SECTIONS[section]} ${category.name.toLowerCase()}`
     : category.name;
 
-  return (
-    <Shell mobileTitle={title} mobileActions="search">
-      <Suspense fallback={null}>
-        <CategoryProducts category={category} section={section} title={title} />
-      </Suspense>
-    </Shell>
-  );
-}
-
-/**
- * `hailt/page.tsx`-тэй ижил хэв маяг: DB-ийн хүлээлтийг Suspense-ийн ДОТОР
- * байлгахын тулд await хийх хэсгийг тусдаа async компонент болгов. Ингэснээр
- * хуудасны бүрхүүл шууд урсан гарна.
- */
-async function CategoryProducts({
-  category,
-  section,
-  title,
-}: {
-  category: Category;
-  section: string | null;
-  title: string;
-}) {
   return (
     <CategoryView
       category={category}

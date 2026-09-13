@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Suspense } from "react";
 import { Heart, LayoutGrid, Search, ShoppingBag, User } from "lucide-react";
 import { cx } from "@/lib/format";
 
@@ -13,10 +14,27 @@ const TABS = [
   { href: "/burtgel", label: "Бүртгэл", icon: User },
 ];
 
-/** 1f — мобайлын доод таб бар */
+/**
+ * 1f — мобайлын доод таб бар.
+ *
+ * `usePathname` нь динамик param-тай замын статик бүрхүүлийг prerender хийх үед
+ * suspend болдог (`/p/[slug]`). Тиймээс уншилтыг Suspense-ийн дотор хийж,
+ * fallback дээр идэвхтэй таб нь тодроогүй ижил бар-ыг гаргана — ингэснээр
+ * бүрхүүл бүрэн үлдэнэ. SiteHeader-ийн `useSearchParams` хэв маягтай ижил.
+ */
 export function MobileTabBar() {
-  const pathname = usePathname();
+  return (
+    <Suspense fallback={<TabBar pathname="" />}>
+      <ActiveTabBar />
+    </Suspense>
+  );
+}
 
+function ActiveTabBar() {
+  return <TabBar pathname={usePathname()} />;
+}
+
+function TabBar({ pathname }: { pathname: string }) {
   return (
     <nav
       aria-label="Үндсэн цэс"
