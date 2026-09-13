@@ -41,4 +41,20 @@ describe("validateProductForm", () => {
     const { errors } = validateProductForm({ ...valid, stock: "-1" });
     expect(errors.stock).toBeTruthy();
   });
+
+  it("хоосон үнийг татгалзана", () => {
+    const { errors } = validateProductForm({ ...valid, price: "" });
+    expect(errors.price).toBeTruthy();
+  });
+
+  it("хоосон үнэлгээг татгалзана", () => {
+    const { errors } = validateProductForm({ ...valid, rating: "" });
+    expect(errors.rating).toBeTruthy();
+  });
+
+  it("бүхэл биш тоон хэлбэрийг татгалзана", () => {
+    expect(validateProductForm({ ...valid, price: "0x10" }).errors.price).toBeTruthy();
+    expect(validateProductForm({ ...valid, price: "1e5" }).errors.price).toBeTruthy();
+    expect(validateProductForm({ ...valid, stock: "5.5" }).errors.stock).toBeTruthy();
+  });
 });

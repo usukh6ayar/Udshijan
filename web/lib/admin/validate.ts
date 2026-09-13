@@ -3,9 +3,9 @@ export type FormErrors = Record<string, string>;
 
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
+/** Зөвхөн "0", "12" мэтийн цэвэр бүхэл тоо. Хоосон утга ч алдаа. */
 function positiveInt(value: string): number | null {
-  const n = Number(value);
-  return Number.isInteger(n) && n >= 0 ? n : null;
+  return /^\d+$/.test(value.trim()) ? Number(value.trim()) : null;
 }
 
 export function validateProductForm(input: ProductFormInput): {
@@ -39,8 +39,9 @@ export function validateProductForm(input: ProductFormInput): {
   if (positiveInt(input.reviewCount ?? "") === null) {
     errors.reviewCount = "Сэтгэгдлийн тоо сөрөг биш бүхэл тоо байна";
   }
-  const rating = Number(input.rating);
-  if (!Number.isFinite(rating) || rating < 0 || rating > 5) {
+  const ratingRaw = (input.rating ?? "").trim();
+  const rating = Number(ratingRaw);
+  if (ratingRaw === "" || !Number.isFinite(rating) || rating < 0 || rating > 5) {
     errors.rating = "Үнэлгээ 0–5 хооронд байна";
   }
 
