@@ -31,15 +31,22 @@ import {
   computeTotals,
   FREE_SHIPPING_FROM,
   shippingFeeFor,
+  type ShippingMethod,
 } from "@/lib/pricing";
 import { money } from "@/lib/format";
+import {
+  CITIES,
+  DISTRICTS,
+  INITIAL_CHECKOUT,
+  validateCheckout,
+  type CheckoutErrors,
+  type CheckoutForm,
+} from "@/lib/orders/validate";
 
 /* ── Хүргэлт, төлбөрийн сонголтууд ─────────────────────────────────────── */
 
-type ShippingKey = "standard" | "express" | "pickup";
-
 const SHIPPING_METHODS: {
-  key: ShippingKey;
+  key: ShippingMethod;
   label: string;
   description: string;
   icon: React.ReactNode;
@@ -91,83 +98,6 @@ const PAYMENT_METHODS = [
   },
 ] as const;
 
-/** Дизайны footer дээрх хаягтай нийцүүлсэн жагсаалт */
-const CITIES = [
-  "Улаанбаатар",
-  "Дархан-Уул",
-  "Орхон",
-  "Сэлэнгэ",
-  "Төв",
-  "Бусад аймаг",
-];
-
-const DISTRICTS = [
-  "Баянгол",
-  "Баянзүрх",
-  "Хан-Уул",
-  "Сонгинохайрхан",
-  "Сүхбаатар",
-  "Чингэлтэй",
-  "Налайх",
-  "Багануур",
-  "Багахангай",
-];
-
-type FormState = {
-  name: string;
-  phone: string;
-  email: string;
-  city: string;
-  district: string;
-  khoroo: string;
-  address: string;
-  note: string;
-  shipping: ShippingKey;
-  payment: string;
-  terms: boolean;
-};
-
-const INITIAL: FormState = {
-  name: "",
-  phone: "",
-  email: "",
-  city: CITIES[0],
-  district: DISTRICTS[0],
-  khoroo: "",
-  address: "",
-  note: "",
-  shipping: "standard",
-  payment: "qpay",
-  terms: false,
-};
-
-type Errors = Partial<Record<keyof FormState, string>>;
-
-function validate(form: FormState): Errors {
-  const errors: Errors = {};
-
-  if (form.name.trim().length < 2) errors.name = "Нэрээ бүтэн бичнэ үү.";
-
-  const digits = form.phone.replace(/\D/g, "");
-  if (digits.length !== 8) errors.phone = "Утасны дугаар 8 оронтой байх ёстой.";
-
-  if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
-    errors.email = "И-мэйл хаяг буруу байна.";
-  }
-
-  // Салбараас авах үед хүргэлтийн хаяг шаардлагагүй
-  if (form.shipping !== "pickup") {
-    if (!form.khoroo.trim()) errors.khoroo = "Хороогоо оруулна уу.";
-    if (form.address.trim().length < 4) {
-      errors.address = "Байр, орц, тоотоо тодорхой бичнэ үү.";
-    }
-  }
-
-  if (!form.terms) errors.terms = "Үйлчилгээний нөхцөлийг зөвшөөрнө үү.";
-
-  return errors;
-}
-
 /** Захиалгын дугаар — зөвхөн илгээх үед үүсгэнэ (render дотор үүсгэвэл hydration зөрчинө) */
 function makeOrderNumber(): string {
   const now = new Date();
@@ -182,8 +112,8 @@ function makeOrderNumber(): string {
 
 export function CheckoutView() {
   const { coupon, resolved, clear, loading } = useCart();
-  const [form, setForm] = useState<FormState>(INITIAL);
-  const [errors, setErrors] = useState<Errors>({});
+  const [form, setForm] = useState<CheckoutForm>(INITIAL_CHECKOUT);
+  const [errors, setErrors] = useState<CheckoutErrors>({});
   const [submitted, setSubmitted] = useState(false);
   const [order, setOrder] = useState<{ number: string; total: number } | null>(
     null,
@@ -200,7 +130,7 @@ export function CheckoutView() {
     [resolved, coupon, form.shipping],
   );
 
-  function set<K extends keyof FormState>(key: K, value: FormState[K]) {
+  function set<K extends keyof CheckoutForm>(key: K, value: CheckoutForm[K]) {
     setForm((f) => ({ ...f, [key]: value }));
     if (submitted) setErrors((e) => ({ ...e, [key]: undefined }));
   }
@@ -209,7 +139,7 @@ export function CheckoutView() {
     e.preventDefault();
     setSubmitted(true);
 
-    const found = validate(form);
+    const found = validateCheckout(form);
     setErrors(found);
 
     if (Object.keys(found).length > 0) {
