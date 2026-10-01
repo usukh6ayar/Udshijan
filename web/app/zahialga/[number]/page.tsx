@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Shell } from "@/components/layout/Shell";
 import { OrderDetails } from "@/components/shop/OrderDetails";
@@ -13,6 +14,7 @@ import {
   paymentState,
   STATUS_LABEL,
 } from "@/lib/orders/labels";
+import { normalizeOrderNumber } from "@/lib/orders/number";
 import { orderForViewer } from "@/lib/orders/viewer";
 
 export const metadata: Metadata = {
@@ -39,9 +41,10 @@ export default function OrderPage(props: PageProps<"/zahialga/[number]">) {
 async function OrderContent({
   params,
 }: Pick<PageProps<"/zahialga/[number]">, "params">) {
-  const { number } = await params;
+  const number = normalizeOrderNumber((await params).number);
+  if (!number) notFound();
   const order = await orderForViewer(number);
-  if (!order) return <OrderPhoneGate number={decodeURIComponent(number).toUpperCase()} />;
+  if (!order) return <OrderPhoneGate number={number} />;
 
   return (
     <div className="space-y-6">
