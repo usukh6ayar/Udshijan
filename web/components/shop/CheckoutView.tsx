@@ -26,20 +26,17 @@ import {
   Textarea,
 } from "@/components/ui/Field";
 import { OrderSummary } from "./OrderSummary";
+import { lineKey, toPricedLine, useCart } from "@/lib/cart";
 import {
   computeTotals,
   FREE_SHIPPING_FROM,
-  SHIPPING_FEE,
-  lineKey,
-  useCart,
-} from "@/lib/cart";
+  shippingFeeFor,
+} from "@/lib/pricing";
 import { money } from "@/lib/format";
 
 /* ── Хүргэлт, төлбөрийн сонголтууд ─────────────────────────────────────── */
 
 type ShippingKey = "standard" | "express" | "pickup";
-
-const EXPRESS_FEE = 10_000;
 
 const SHIPPING_METHODS: {
   key: ShippingKey;
@@ -184,7 +181,7 @@ function makeOrderNumber(): string {
 }
 
 export function CheckoutView() {
-  const { resolved, couponRate, clear, loading } = useCart();
+  const { coupon, resolved, clear, loading } = useCart();
   const [form, setForm] = useState<FormState>(INITIAL);
   const [errors, setErrors] = useState<Errors>({});
   const [submitted, setSubmitted] = useState(false);
@@ -193,17 +190,14 @@ export function CheckoutView() {
   );
   const formRef = useRef<HTMLFormElement>(null);
 
-  const subtotal = resolved.reduce((sum, l) => sum + l.lineTotal, 0);
-
-  const shippingFee = useMemo(() => {
-    if (form.shipping === "pickup") return 0;
-    if (form.shipping === "express") return EXPRESS_FEE;
-    return subtotal >= FREE_SHIPPING_FROM ? 0 : SHIPPING_FEE;
-  }, [form.shipping, subtotal]);
-
   const totals = useMemo(
-    () => computeTotals(resolved, couponRate, shippingFee),
-    [resolved, couponRate, shippingFee],
+    () =>
+      computeTotals({
+        lines: resolved.map(toPricedLine),
+        couponCode: coupon,
+        shipping: form.shipping,
+      }),
+    [resolved, coupon, form.shipping],
   );
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
@@ -412,15 +406,11 @@ export function CheckoutView() {
                   description={m.description}
                   checked={form.shipping === m.key}
                   onChange={() => set("shipping", m.key)}
-                  meta={
-                    m.key === "pickup"
-                      ? "Үнэгүй"
-                      : m.key === "express"
-                        ? `+${money(EXPRESS_FEE)}`
-                        : subtotal >= FREE_SHIPPING_FROM
-                          ? "Үнэгүй"
-                          : money(SHIPPING_FEE)
-                  }
+                  meta={(() => {
+                    const fee = shippingFeeFor(m.key, totals.subtotal);
+                    if (fee === 0) return "Үнэгүй";
+                    return m.key === "express" ? `+${money(fee)}` : money(fee);
+                  })()}
                 />
               ))}
             </div>

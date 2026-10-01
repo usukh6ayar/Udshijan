@@ -2,6 +2,12 @@
 
 import { useCallback, useMemo, useSyncExternalStore } from "react";
 import { useProductCache } from "./product-cache";
+import {
+  computeTotals,
+  couponRate as rateOf,
+  normalizeCoupon,
+  type PricedLine,
+} from "./pricing";
 import type { Product } from "./data/types";
 
 export type CartLine = {
@@ -20,42 +26,21 @@ export type ResolvedLine = CartLine & {
   lineSavings: number;
 };
 
-export type CartTotals = {
-  /** Σ (price × qty) */
-  subtotal: number;
-  /** Σ ((compareAt − price) × qty) — дүнгээс ХАСАГДАХГҮЙ, зөвхөн харуулна */
-  savings: number;
-  /** Купоны хөнгөлөлт — тусад нь харуулна */
-  couponSavings: number;
-  /** subtotal ≥ FREE_SHIPPING_FROM бол 0 */
-  shipping: number;
-  freeShipping: boolean;
-  /** НӨАТ үнэд шингэсэн */
-  vat: number;
-  /** subtotal + shipping */
-  total: number;
-};
-
-export const FREE_SHIPPING_FROM = 100_000;
-export const SHIPPING_FEE = 5_000;
-export const VAT_RATE = 0.1;
-
-/** Дизайн дээрх демо купон */
-const COUPONS: Record<string, number> = { NAIM8: 0.15 };
+/** `lib/pricing`-ийн оролт — үнийг Product-аас авна */
+export function toPricedLine(line: ResolvedLine): PricedLine {
+  return {
+    unitPrice: line.product.price,
+    compareAt: line.product.compareAt,
+    qty: line.qty,
+  };
+}
 
 const STORAGE_KEY = "udshijan.cart.v1";
 
 type CartData = { lines: CartLine[]; coupon: string | null };
 
-/** Дизайны 1e дэлгэц дээрх эхний сагс — SSR-ийн эхлэл төлөв */
-const SEED: CartData = {
-  lines: [
-    { slug: "eregtei-hovon-futbolk", color: "Хар", size: "L", qty: 2 },
-    { slug: "utasgui-chihevch", color: "Хар", qty: 1 },
-    { slug: "ars-archilgaanii-bagts", qty: 1 },
-  ],
-  coupon: "NAIM8",
-};
+/** Шинэ зочин хоосон сагсаар эхэлнэ — SSR-ийн эхлэл төлөв */
+const EMPTY: CartData = { lines: [], coupon: null };
 
 export function lineKey(line: Pick<CartLine, "slug" | "color" | "size">): string {
   return [line.slug, line.color ?? "", line.size ?? ""].join("|");
@@ -83,7 +68,7 @@ function load(): CartData {
   } catch {
     // Гэмтсэн өгөгдөл — эхлэл төлөв рүү буцна
   }
-  cache = SEED;
+  cache = EMPTY;
   return cache;
 }
 
@@ -104,7 +89,7 @@ function subscribe(listener: () => void) {
   };
 }
 
-const getServerSnapshot = () => SEED;
+const getServerSnapshot = () => EMPTY;
 
 export function useCart() {
   const data = useSyncExternalStore(subscribe, load, getServerSnapshot);
@@ -142,8 +127,8 @@ export function useCart() {
   const clear = useCallback(() => save({ ...load(), lines: [] }), []);
 
   const applyCoupon = useCallback((code: string) => {
-    const normalized = code.trim().toUpperCase();
-    if (!(normalized in COUPONS)) return false;
+    const normalized = normalizeCoupon(code);
+    if (!normalized) return false;
     save({ ...load(), coupon: normalized });
     return true;
   }, []);
@@ -175,10 +160,14 @@ export function useCart() {
     [data.lines, productCache],
   );
 
-  const couponRate = data.coupon ? (COUPONS[data.coupon] ?? 0) : 0;
+  const couponRate = rateOf(data.coupon);
   const totals = useMemo(
-    () => computeTotals(resolved, couponRate),
-    [resolved, couponRate],
+    () =>
+      computeTotals({
+        lines: resolved.map(toPricedLine),
+        couponCode: data.coupon,
+      }),
+    [resolved, data.coupon],
   );
   const count = useMemo(
     () => resolved.reduce((sum, l) => sum + l.qty, 0),
@@ -205,45 +194,5 @@ export function useCart() {
     clear,
     applyCoupon,
     removeCoupon,
-  };
-}
-
-/**
- * Дизайны 1e дэлгэцийн арифметик:
- *   Барааны дүн = Σ (үнэ × тоо)              → 299,600₮
- *   Хөнгөлөлт   = хэмнэсэн дүн, ХАСАГДАХГҮЙ  → зөвхөн харуулна
- *   Хүргэлт     = 100,000₮-с дээш бол үнэгүй
- *   НӨАТ (10%)  = үнэд шингэсэн → subtotal − subtotal/1.1 → 27,236₮
- *   Нийт        = Барааны дүн + хүргэлт        → 299,600₮
- *
- * `shippingOverride` — checkout дээр хүргэлтийн арга сонгоход (шуурхай, салбараас авах)
- * хүргэлтийн төлбөр өөрчлөгдөнө. Арифметик нэг эх сурвалжтай байхын тулд энд авна,
- * харуулах давхаргад тооцоолохгүй.
- */
-export function computeTotals(
-  lines: ResolvedLine[],
-  couponRate = 0,
-  shippingOverride?: number,
-): CartTotals {
-  const subtotal = lines.reduce((sum, l) => sum + l.lineTotal, 0);
-  const savings = lines.reduce((sum, l) => sum + l.lineSavings, 0);
-  const couponSavings = Math.round(subtotal * couponRate);
-  const standardFree = subtotal >= FREE_SHIPPING_FROM;
-  const shipping =
-    shippingOverride !== undefined
-      ? shippingOverride
-      : subtotal === 0 || standardFree
-        ? 0
-        : SHIPPING_FEE;
-  const freeShipping = shipping === 0 && subtotal > 0;
-  const vat = Math.round(subtotal - subtotal / (1 + VAT_RATE));
-  return {
-    subtotal,
-    savings,
-    couponSavings,
-    shipping,
-    freeShipping,
-    vat,
-    total: subtotal + shipping,
   };
 }

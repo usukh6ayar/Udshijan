@@ -1,19 +1,19 @@
 "use client";
 
 import type { ReactNode } from "react";
-import type { CartTotals } from "@/lib/cart";
+import type { Totals } from "@/lib/pricing";
 import { cx, money } from "@/lib/format";
 
 /**
  * Сагс болон checkout хоёрын хуваалцдаг «Захиалгын дүн» самбар.
- * Тооцоолол нь `computeTotals` дээр хийгддэг — энд зөвхөн харуулна.
+ * Тооцоолол нь `lib/pricing`-ийн `computeTotals` дээр хийгддэг — энд зөвхөн харуулна.
  */
 export function OrderSummary({
   totals,
   title = "Захиалгын дүн",
   footer,
 }: {
-  totals: CartTotals;
+  totals: Totals;
   title?: string;
   footer?: ReactNode;
 }) {
@@ -25,14 +25,21 @@ export function OrderSummary({
         <SummaryRow label="Барааны дүн" value={money(totals.subtotal)} />
         {totals.savings > 0 && (
           <SummaryRow
-            label="Хөнгөлөлт"
-            value={`−${money(totals.savings)}`}
+            label="Хямдралаар хэмнэсэн"
+            value={money(totals.savings)}
+            tone="success"
+          />
+        )}
+        {totals.couponDiscount > 0 && (
+          <SummaryRow
+            label={`Купон (${totals.couponCode})`}
+            value={`−${money(totals.couponDiscount)}`}
             tone="success"
           />
         )}
         <SummaryRow
           label="Хүргэлт"
-          value={totals.freeShipping ? "Үнэгүй" : money(totals.shipping)}
+          value={totals.freeShipping ? "Үнэгүй" : money(totals.shippingFee)}
           tone={totals.freeShipping ? "success" : undefined}
         />
         <SummaryRow label="НӨАТ (10%)" value={money(totals.vat)} />
