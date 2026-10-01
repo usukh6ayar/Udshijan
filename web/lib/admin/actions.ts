@@ -1,7 +1,7 @@
 "use server";
 
 import { eq } from "drizzle-orm";
-import { revalidateTag } from "next/cache";
+import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { products as table } from "@/drizzle/schema";
@@ -29,18 +29,36 @@ function numOrNull(value: string | undefined): number | null {
 
 /**
  * JSONB талбарууд. Формд түүхий JSON-оор оруулдаг тул задлахад алдаа гарч
- * болно — алдааг залгихгүй, дуудагч нь формд буцаана.
+ * болно — алдааг залгихгүй, тухайн талбарын нэрээр `errors`-д бичнэ.
  */
-function parseJson<T>(value: string | undefined, fallback: T): T {
-  const trimmed = (value ?? "").trim();
+function parseJson<T>(
+  input: Record<string, string>,
+  field: string,
+  fallback: T,
+  errors: FormErrors,
+): T {
+  const trimmed = (input[field] ?? "").trim();
   if (trimmed === "") return fallback;
-  return JSON.parse(trimmed) as T;
+  try {
+    return JSON.parse(trimmed) as T;
+  } catch {
+    errors[field] = "JSON буруу бичигдсэн байна";
+    return fallback;
+  }
 }
 
-/** Дэлгүүрийн кэшийг шинэчилнэ. Хоёр аргумент заавал — нэг нь deprecated. */
+/**
+ * Дэлгүүрийн кэшийг шууд дуусгана.
+ *
+ * `revalidateTag(tag, "max")` биш: тэр нь stale-while-revalidate тул
+ * redirect-ийн дараах /admin болон засах форм хуучин утгаа харуулж, дахин
+ * хадгалахад өмнөх засвараа дарж бичих эрсдэлтэй. /admin нь cookie
+ * уншдаггүй тул статикаар кэшлэгддэг. `updateTag` нь Server Action-д
+ * зориулсан read-your-own-writes хувилбар.
+ */
 function refresh(slug: string) {
-  revalidateTag("products", "max");
-  revalidateTag("product-" + slug, "max");
+  updateTag("products");
+  updateTag("product-" + slug);
 }
 
 export async function saveProduct(
@@ -53,37 +71,37 @@ export async function saveProduct(
   const { errors } = validateProductForm(input);
   if (Object.keys(errors).length > 0) return errors;
 
-  let row;
-  try {
-    row = {
-      slug: input.slug.trim(),
-      sku: input.sku.trim(),
-      brand: input.brand.trim(),
-      title: input.title.trim(),
-      titleFull: orNull(input.titleFull),
-      category: input.category.trim(),
-      subcategory: input.subcategory.trim(),
-      section: orNull(input.section),
-      price: Number(input.price),
-      compareAt: numOrNull(input.compareAt),
-      rating: Number(input.rating),
-      reviewCount: Number(input.reviewCount),
-      soldCount: numOrNull(input.soldCount),
-      stock: Number(input.stock),
-      imageLabel: input.imageLabel.trim(),
-      imageCount: Number(input.imageCount),
-      description: input.description.trim(),
-      colors: parseJson(input.colors, []),
-      sizes: parseJson(input.sizes, []),
-      wholesale: parseJson(input.wholesale, null),
-      specs: parseJson(input.specs, []),
-      badges: parseJson(input.badges, null),
-      featured: parseJson(input.featured, null),
-      descriptionNotes: parseJson(input.descriptionNotes, null),
-    };
-  } catch {
-    return { colors: "JSON талбаруудын аль нэг нь буруу бичигдсэн байна" };
-  }
+  const jsonErrors: FormErrors = {};
+  const json = <T,>(field: string, fallback: T) =>
+    parseJson(input, field, fallback, jsonErrors);
+
+  const row = {
+    slug: input.slug.trim(),
+    sku: input.sku.trim(),
+    brand: input.brand.trim(),
+    title: input.title.trim(),
+    titleFull: orNull(input.titleFull),
+    category: input.category.trim(),
+    subcategory: input.subcategory.trim(),
+    section: orNull(input.section),
+    price: Number(input.price),
+    compareAt: numOrNull(input.compareAt),
+    rating: Number(input.rating),
+    reviewCount: Number(input.reviewCount),
+    soldCount: numOrNull(input.soldCount),
+    stock: Number(input.stock),
+    imageLabel: input.imageLabel.trim(),
+    imageCount: Number(input.imageCount),
+    description: input.description.trim(),
+    colors: json("colors", []),
+    sizes: json("sizes", []),
+    wholesale: json("wholesale", null),
+    specs: json("specs", []),
+    badges: json("badges", null),
+    featured: json("featured", null),
+    descriptionNotes: json("descriptionNotes", null),
+  };
+  if (Object.keys(jsonErrors).length > 0) return jsonErrors;
 
   // Upsert хийхгүй: шинээр нэмэхдээ байгаа slug-ийг давтвал хуучин барааг
   // чимээгүй дарж бичих байсан. Нэмэх, засахыг тусад нь шийднэ.

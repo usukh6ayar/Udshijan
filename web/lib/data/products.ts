@@ -10,7 +10,7 @@ import type { Product } from "./types";
  *
  * Каталог зөвхөн админ засварлахад өөрчлөгддөг тул хугацааны revalidate
  * шаардлагагүй: урт `cacheLife("max")` + `cacheTag` хосыг ашиглаад, засвар
- * хийгдэхэд `revalidateTag("products", "max")`-аар цуцална.
+ * хийгдэхэд `updateTag("products")`-аар шууд цуцална (lib/admin/actions.ts).
  */
 export async function allProducts(): Promise<Product[]> {
   "use cache";

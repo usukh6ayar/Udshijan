@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState } from "react";
-import { Alert } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Input, Select, Textarea } from "@/components/ui/Field";
 import { saveProduct } from "@/lib/admin/actions";
@@ -145,33 +144,32 @@ export function ProductForm({ product }: { product?: Product }) {
         Доорх талбаруудыг JSON хэлбэрээр бичнэ. Буруу бичвэл хадгалахад алдаа гарна.
       </p>
 
-      {errors?.colors ? <Alert>{errors.colors}</Alert> : null}
 
-      <Row label="Өнгө (colors)">
+      <Row label="Өнгө (colors)" error={errors?.colors}>
         <Textarea name="colors" defaultValue={json(v?.colors)} rows={4} />
       </Row>
 
-      <Row label="Хэмжээ (sizes)">
+      <Row label="Хэмжээ (sizes)" error={errors?.sizes}>
         <Textarea name="sizes" defaultValue={json(v?.sizes)} rows={4} />
       </Row>
 
-      <Row label="Үзүүлэлт (specs)">
+      <Row label="Үзүүлэлт (specs)" error={errors?.specs}>
         <Textarea name="specs" defaultValue={json(v?.specs)} rows={4} />
       </Row>
 
-      <Row label="Бөөний үнэ (wholesale)">
+      <Row label="Бөөний үнэ (wholesale)" error={errors?.wholesale}>
         <Textarea name="wholesale" defaultValue={json(v?.wholesale)} rows={4} />
       </Row>
 
-      <Row label="Тэмдэг (badges)">
+      <Row label="Тэмдэг (badges)" error={errors?.badges}>
         <Textarea name="badges" defaultValue={json(v?.badges)} rows={2} />
       </Row>
 
-      <Row label="Онцлох (featured)">
+      <Row label="Онцлох (featured)" error={errors?.featured}>
         <Textarea name="featured" defaultValue={json(v?.featured)} rows={2} />
       </Row>
 
-      <Row label="Тайлбарын нэмэлт мөрүүд (descriptionNotes)">
+      <Row label="Тайлбарын нэмэлт мөрүүд (descriptionNotes)" error={errors?.descriptionNotes}>
         <Textarea name="descriptionNotes" defaultValue={json(v?.descriptionNotes)} rows={3} />
       </Row>
 

@@ -8,9 +8,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 let existing: Set<string>;
 const writes: { op: "insert" | "update"; slug: string }[] = [];
+const expired: string[] = [];
 
 vi.mock("./session", () => ({ requireAdmin: async () => {} }));
-vi.mock("next/cache", () => ({ revalidateTag: () => {} }));
+vi.mock("next/cache", () => ({
+  updateTag: (tag: string) => expired.push(tag),
+  // stale-while-revalidate: админ хадгалсныхаа дараа хуучин утга харна
+  revalidateTag: () => {},
+}));
 vi.mock("next/navigation", () => ({
   redirect: () => {
     throw new Error("REDIRECT");
@@ -30,6 +35,7 @@ vi.mock("@/lib/db", () => ({
         }),
       }),
     }),
+    delete: () => ({ where: async () => {} }),
     update: () => ({
       set: (row: { slug: string }) => ({
         where: () => ({
@@ -44,9 +50,13 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
-const { saveProduct } = await import("./actions");
+const { saveProduct, deleteProduct } = await import("./actions");
 
-function form(mode: "create" | "edit", slug: string): FormData {
+function form(
+  mode: "create" | "edit",
+  slug: string,
+  extra: Record<string, string> = {},
+): FormData {
   const fd = new FormData();
   const values: Record<string, string> = {
     mode,
@@ -64,13 +74,14 @@ function form(mode: "create" | "edit", slug: string): FormData {
     rating: "4.5",
     reviewCount: "10",
   };
-  for (const [k, v] of Object.entries(values)) fd.set(k, v);
+  for (const [k, v] of Object.entries({ ...values, ...extra })) fd.set(k, v);
   return fd;
 }
 
 beforeEach(() => {
   existing = new Set(["baigaa-bar"]);
   writes.length = 0;
+  expired.length = 0;
 });
 
 describe("saveProduct", () => {
@@ -100,5 +111,32 @@ describe("saveProduct", () => {
 
     expect(errors?.slug).toBeTruthy();
     expect(writes).toEqual([]);
+  });
+
+  it("хадгалсны дараа кэшийг шууд дуусгана — админ хуучин утга харахгүй", async () => {
+    await expect(saveProduct(null, form("edit", "baigaa-bar"))).rejects.toThrow(
+      "REDIRECT",
+    );
+    expect(expired).toEqual(["products", "product-baigaa-bar"]);
+  });
+
+  it("буруу JSON-ы алдааг тухайн талбарт нь харуулна", async () => {
+    const errors = await saveProduct(
+      null,
+      form("create", "shine-bar", { sizes: "[{буруу" }),
+    );
+
+    expect(errors?.sizes).toBeTruthy();
+    expect(errors?.colors).toBeUndefined();
+    expect(writes).toEqual([]);
+  });
+});
+
+describe("deleteProduct", () => {
+  it("устгасны дараа кэшийг шууд дуусгана", async () => {
+    const fd = new FormData();
+    fd.set("slug", "baigaa-bar");
+    await expect(deleteProduct(fd)).rejects.toThrow("REDIRECT");
+    expect(expired).toEqual(["products", "product-baigaa-bar"]);
   });
 });
