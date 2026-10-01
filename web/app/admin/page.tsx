@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { Button } from "@/components/ui/Button";
 import { allProducts } from "@/lib/data/products";
-import { logout } from "@/lib/admin/login-action";
 import { requireAdminPage } from "@/lib/admin/session";
 import { money } from "@/lib/format";
+import { AdminNav } from "./AdminNav";
 
 async function ProductRows() {
   await requireAdminPage();
@@ -37,18 +36,12 @@ async function ProductRows() {
 export default function AdminPage() {
   return (
     <main className="mx-auto max-w-3xl px-5 py-8">
+      <AdminNav active="products" />
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-h2">Бүтээгдэхүүн</h1>
-        <div className="flex items-center gap-3">
-          <Link href="/admin/shine" className="text-small font-medium text-brand">
-            + Нэмэх
-          </Link>
-          <form action={logout}>
-            <Button type="submit" variant="ghost" size="sm">
-              Гарах
-            </Button>
-          </form>
-        </div>
+        <Link href="/admin/shine" className="text-small font-medium text-brand">
+          + Нэмэх
+        </Link>
       </div>
 
       <Suspense

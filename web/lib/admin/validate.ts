@@ -3,6 +3,9 @@ export type FormErrors = Record<string, string>;
 
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
+/** `/admin/<slug>`-тай давхцдаг статик замууд */
+const RESERVED_SLUGS = new Set(["zahialga", "shine", "newterh"]);
+
 /** Зөвхөн "0", "12" мэтийн цэвэр бүхэл тоо. Хоосон утга ч алдаа. */
 function positiveInt(value: string): number | null {
   return /^\d+$/.test(value.trim()) ? Number(value.trim()) : null;
@@ -15,6 +18,8 @@ export function validateProductForm(input: ProductFormInput): {
 
   if (!SLUG_RE.test(input.slug ?? "")) {
     errors.slug = "Зөвхөн жижиг үсэг, тоо, зураас ашиглана";
+  } else if (RESERVED_SLUGS.has(input.slug)) {
+    errors.slug = "Энэ slug admin-ий замтай давхцана — өөрийг сонгоно уу";
   }
   for (const field of [
     "sku",

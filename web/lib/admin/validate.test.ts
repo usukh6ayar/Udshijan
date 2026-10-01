@@ -18,6 +18,12 @@ const valid = {
 };
 
 describe("validateProductForm", () => {
+  it("admin-ий замтай давхцах slug-ийг татгалзана", () => {
+    for (const slug of ["zahialga", "shine", "newterh"]) {
+      expect(validateProductForm({ ...valid, slug }).errors.slug).toBeTruthy();
+    }
+  });
+
   it("зөв өгөгдлийг хүлээн авна", () => {
     expect(validateProductForm(valid).errors).toEqual({});
   });
