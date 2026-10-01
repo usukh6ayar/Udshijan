@@ -1,32 +1,42 @@
 "use client";
 
-import { useState } from "react";
-import { Alert } from "@/components/ui/Badge";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Field";
+import { lookupOrder } from "@/lib/orders/actions";
+import { ORDER_NUMBER_RE } from "@/lib/orders/number";
 
-/**
- * Захиалгын дугаараар хайх демо форм. Backend байхгүй тул үргэлж «олдсонгүй»
- * гэж хариулна — хуурамч захиалга зохиохгүй.
- */
+/** Захиалгын дугаар + утсаар хайж, таарвал захиалгын хуудас руу шилжүүлнэ */
 export function OrderLookup() {
+  const router = useRouter();
   const [code, setCode] = useState("");
+  const [phone, setPhone] = useState("");
   const [result, setResult] = useState<"idle" | "invalid" | "notFound">("idle");
+  const [pending, startTransition] = useTransition();
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const value = code.trim().toUpperCase();
-    setResult(/^UDS-\d{6}-\d{4}$/.test(value) ? "notFound" : "invalid");
+    const number = code.trim().toUpperCase();
+    if (!ORDER_NUMBER_RE.test(number)) {
+      setResult("invalid");
+      return;
+    }
+    startTransition(async () => {
+      const res = await lookupOrder({ number, phone });
+      if (res.ok) router.push(`/zahialga/${res.number}`);
+      else setResult("notFound");
+    });
   }
 
   return (
     <div className="mt-6 rounded-card border border-brand/25 bg-brand-tint p-5">
-      <h3 className="text-h3">Захиалгын дугаараар хайх</h3>
+      <h3 className="text-h3">Захиалгаа шалгах</h3>
       <p className="mt-1.5 text-small text-ink-2">
         Дугаарын хэлбэр: UDS-260911-4821
       </p>
 
-      <form onSubmit={onSubmit} className="mt-4 flex flex-col gap-2 sm:flex-row">
+      <form onSubmit={onSubmit} className="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
         <Input
           value={code}
           onChange={(e) => {
@@ -37,7 +47,18 @@ export function OrderLookup() {
           placeholder="UDS-260911-4821"
           aria-label="Захиалгын дугаар"
         />
-        <Button type="submit" className="shrink-0">
+        <Input
+          type="tel"
+          inputMode="numeric"
+          value={phone}
+          onChange={(e) => {
+            setPhone(e.target.value);
+            setResult("idle");
+          }}
+          placeholder="Утас: 9911-2233"
+          aria-label="Утасны дугаар"
+        />
+        <Button type="submit" className="shrink-0" loading={pending}>
           Хайх
         </Button>
       </form>
@@ -47,14 +68,11 @@ export function OrderLookup() {
           Дугаарын хэлбэр буруу байна. UDS-XXXXXX-XXXX хэлбэрээр оруулна уу.
         </p>
       )}
-
       {result === "notFound" && (
-        <div className="mt-3">
-          <Alert>
-            Энэ бол демо дэлгүүр тул захиалгын мэдээлэл хадгалагддаггүй. Бодит
-            захиалгаа шалгахыг хүсвэл 7700-1234 руу залгана уу.
-          </Alert>
-        </div>
+        <p className="mt-2 text-small text-danger">
+          Захиалга олдсонгүй. Дугаар, утсаа шалгана уу. Тусламж хэрэгтэй бол
+          7700-1234 руу залгана уу.
+        </p>
       )}
     </div>
   );
