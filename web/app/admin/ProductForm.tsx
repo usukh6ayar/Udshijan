@@ -36,6 +36,8 @@ export function ProductForm({ product }: { product?: Product }) {
 
   return (
     <form action={formAction} className="mt-6 flex flex-col gap-4">
+      <input type="hidden" name="mode" value={v ? "edit" : "create"} />
+
       <Row label="Slug (URL-д гарна)" error={errors?.slug}>
         <Input
           name="slug"

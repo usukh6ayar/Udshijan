@@ -85,10 +85,27 @@ export async function saveProduct(
     return { colors: "JSON талбаруудын аль нэг нь буруу бичигдсэн байна" };
   }
 
-  await db
-    .insert(table)
-    .values(row)
-    .onConflictDoUpdate({ target: table.slug, set: row });
+  // Upsert хийхгүй: шинээр нэмэхдээ байгаа slug-ийг давтвал хуучин барааг
+  // чимээгүй дарж бичих байсан. Нэмэх, засахыг тусад нь шийднэ.
+  if (input.mode === "edit") {
+    const updated = await db
+      .update(table)
+      .set(row)
+      .where(eq(table.slug, row.slug))
+      .returning({ slug: table.slug });
+    if (updated.length === 0) {
+      return { slug: "Энэ бүтээгдэхүүн устсан байна — жагсаалт руу буцна уу" };
+    }
+  } else {
+    const inserted = await db
+      .insert(table)
+      .values(row)
+      .onConflictDoNothing()
+      .returning({ slug: table.slug });
+    if (inserted.length === 0) {
+      return { slug: "Энэ slug-тай бүтээгдэхүүн аль хэдийн байна" };
+    }
+  }
 
   refresh(row.slug);
   redirect("/admin");
