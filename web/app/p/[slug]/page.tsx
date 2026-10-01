@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { Shell } from "@/components/layout/Shell";
 import { ProductDetail } from "@/components/shop/ProductDetail";
@@ -14,7 +15,7 @@ import {
 } from "@/lib/data/products";
 
 /**
- * Бүх 17 slug-ийг буцаана — build дээр бүгд prerender хийгдэнэ. Жагсаалтад
+ * Бүх slug-ийн статик бүрхүүлийг build дээр prerender хийнэ. Жагсаалтад
  * ороогүй slug (админ шинээр үүсгэсэн бараа) ч ажиллана: түүнд статик бүрхүүл
  * үзүүлээд агуулгыг нь хүсэлтийн үед урсгана.
  */
@@ -23,9 +24,11 @@ export async function generateStaticParams() {
   return slugs.map((slug) => ({ slug }));
 }
 
+/** ProductContent-тэй ижил шалтгаанаар хүсэлтийн үед уншина — доорх тайлбарыг үз */
 export async function generateMetadata(
   props: PageProps<"/p/[slug]">,
 ): Promise<Metadata> {
+  await connection();
   const { slug } = await props.params;
   const product = await productBySlug(slug);
   if (!product) return { title: "Бүтээгдэхүүн" };
@@ -60,14 +63,25 @@ export default function ProductPage(props: PageProps<"/p/[slug]">) {
 async function ProductCategoryName({
   params,
 }: Pick<PageProps<"/p/[slug]">, "params">) {
+  await connection();
   const { slug } = await params;
   const product = await productBySlug(slug);
   return categoryBySlug(product?.category ?? "")?.name ?? "Бүтээгдэхүүн";
 }
 
+/**
+ * Барааны өгөгдлийг prerender-т шингээхгүй, хүсэлтийн үед уншина.
+ *
+ * Шингээвэл админ засвар хийж `updateTag` дуудсаны дараа ч хуудас build-ийн
+ * үеийн хуучин үнийг харуулсаар байв: таг цуцлагдсан хуудсыг дахин зурахдаа
+ * Next build-ийн Resume Data Cache-ийг ашигладаг. `connection()`-ийн дараах
+ * уншилт тэр кэшийг алгасаж, `use cache` давхаргаас тагаа шалгаж авна —
+ * тэр нь DB рүү биш, кэш рүү хандах тул хурд бараг өөрчлөгдөхгүй.
+ */
 async function ProductContent({
   params,
 }: Pick<PageProps<"/p/[slug]">, "params">) {
+  await connection();
   const { slug } = await params;
   const product = await productBySlug(slug);
   if (!product) notFound();
