@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useMemo, useRef, useState, useTransition } from "react";
 import {
   Banknote,
   Building2,
@@ -15,7 +16,7 @@ import {
 } from "lucide-react";
 import { Placeholder } from "@/components/Placeholder";
 import { Alert, Skeleton } from "@/components/ui/Badge";
-import { Button, ButtonLink } from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import {
   Checkbox,
@@ -42,6 +43,7 @@ import {
   type CheckoutErrors,
   type CheckoutForm,
 } from "@/lib/orders/validate";
+import { placeOrder } from "@/lib/orders/actions";
 
 /* ── Хүргэлт, төлбөрийн сонголтууд ─────────────────────────────────────── */
 
@@ -98,26 +100,16 @@ const PAYMENT_METHODS = [
   },
 ] as const;
 
-/** Захиалгын дугаар — зөвхөн илгээх үед үүсгэнэ (render дотор үүсгэвэл hydration зөрчинө) */
-function makeOrderNumber(): string {
-  const now = new Date();
-  const date = [
-    String(now.getFullYear()).slice(2),
-    String(now.getMonth() + 1).padStart(2, "0"),
-    String(now.getDate()).padStart(2, "0"),
-  ].join("");
-  const tail = String(Math.floor(Math.random() * 10_000)).padStart(4, "0");
-  return `UDS-${date}-${tail}`;
-}
-
 export function CheckoutView() {
-  const { coupon, resolved, clear, loading } = useCart();
+  const { lines, coupon, resolved, clear, loading } = useCart();
   const [form, setForm] = useState<CheckoutForm>(INITIAL_CHECKOUT);
   const [errors, setErrors] = useState<CheckoutErrors>({});
   const [submitted, setSubmitted] = useState(false);
-  const [order, setOrder] = useState<{ number: string; total: number } | null>(
-    null,
-  );
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [problems, setProblems] = useState<string[]>([]);
+  /** Захиалга үүссэний дараа шилжих хүртэл «хоосон сагс» харагдахаас сэргийлнэ */
+  const [placed, setPlaced] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
   const totals = useMemo(
@@ -153,12 +145,23 @@ export function CheckoutView() {
       return;
     }
 
-    setOrder({ number: makeOrderNumber(), total: totals.total });
-    clear();
+    setProblems([]);
+    startTransition(async () => {
+      const res = await placeOrder({ form, lines, coupon });
+      if (res.ok) {
+        setPlaced(true);
+        clear();
+        router.push(`/zahialga/${res.number}`);
+        return;
+      }
+      setErrors(res.errors ?? {});
+      setProblems(res.problems ?? []);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
   }
 
-  /* ── Амжилтын төлөв ─────────────────────────────────────────────────── */
-  if (order) {
+  /* ── Захиалга үүссэн, захиалгын хуудас руу шилжиж байна ─────────────── */
+  if (placed) {
     return (
       <div className="container-uds py-10 lg:py-16">
         <div className="mx-auto max-w-xl text-center">
@@ -166,52 +169,7 @@ export function CheckoutView() {
             <CheckCircle2 className="size-8" />
           </div>
           <h1 className="mt-5 text-h1">Захиалга хүлээн авлаа</h1>
-          <p className="mt-3 text-body text-ink-2">
-            {form.name}, таны захиалгыг бүртгэлээ. Оператор{" "}
-            <span className="font-bold text-ink">{form.phone}</span> дугаарт
-            холбогдож баталгаажуулна.
-          </p>
-
-          <dl className="mt-7 divide-y divide-line overflow-hidden rounded-card border border-line bg-white text-left">
-            <div className="flex items-baseline justify-between gap-4 px-5 py-4">
-              <dt className="text-ink-2">Захиалгын дугаар</dt>
-              <dd className="font-mono text-body font-bold tracking-wider">
-                {order.number}
-              </dd>
-            </div>
-            <div className="flex items-baseline justify-between gap-4 px-5 py-4">
-              <dt className="text-ink-2">Төлөх дүн</dt>
-              <dd className="text-h3 tabular-nums">{money(order.total)}</dd>
-            </div>
-            <div className="flex items-baseline justify-between gap-4 px-5 py-4">
-              <dt className="text-ink-2">Хүргэлт</dt>
-              <dd className="text-body font-bold">
-                {SHIPPING_METHODS.find((m) => m.key === form.shipping)?.label}
-              </dd>
-            </div>
-            <div className="flex items-baseline justify-between gap-4 px-5 py-4">
-              <dt className="text-ink-2">Төлбөрийн арга</dt>
-              <dd className="text-body font-bold">
-                {PAYMENT_METHODS.find((m) => m.key === form.payment)?.label}
-              </dd>
-            </div>
-          </dl>
-
-          <div className="mt-4">
-            <Alert tone="success">
-              Энэ бол демо дэлгүүр — захиалга сервер рүү илгээгдээгүй бөгөөд
-              төлбөр татагдахгүй.
-            </Alert>
-          </div>
-
-          <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-center">
-            <ButtonLink href="/tuslamj/zahialga" size="lg">
-              Захиалга хянах
-            </ButtonLink>
-            <ButtonLink href="/" variant="secondary" size="lg">
-              Нүүр хуудас руу буцах
-            </ButtonLink>
-          </div>
+          <p className="mt-3 text-body text-ink-2">Захиалгын хуудас руу шилжиж байна…</p>
         </div>
       </div>
     );
@@ -268,6 +226,9 @@ export function CheckoutView() {
           {hasErrors && (
             <Alert>Дутуу эсвэл буруу бөглөсөн талбаруудыг шалгана уу.</Alert>
           )}
+          {problems.map((p) => (
+            <Alert key={p}>{p}</Alert>
+          ))}
 
           <FormSection step={1} title="Холбоо барих мэдээлэл">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -473,11 +434,11 @@ export function CheckoutView() {
             totals={totals}
             footer={
               <>
-                <Button type="submit" size="lg" fullWidth>
+                <Button type="submit" size="lg" fullWidth loading={pending}>
                   Захиалга баталгаажуулах
                 </Button>
                 <p className="text-center text-small text-ink-2">
-                  Демо дэлгүүр — төлбөр татагдахгүй
+                  Төлбөр демо горимд — бодит мөнгө шилжихгүй
                 </p>
               </>
             }
