@@ -77,6 +77,10 @@ async function ProductCategoryName({
  * Next build-ийн Resume Data Cache-ийг ашигладаг. `connection()`-ийн дараах
  * уншилт тэр кэшийг алгасаж, `use cache` давхаргаас тагаа шалгаж авна —
  * тэр нь DB рүү биш, кэш рүү хандах тул хурд бараг өөрчлөгдөхгүй.
+ *
+ * `productBySlug`-ийг дууддаг ГУРВАН газар (энд, ProductCategoryName,
+ * generateMetadata) бүгд `connection()` шаардана: аль нэг нь prerender-т
+ * үлдвэл тэр уншилт RDC-д хуучин утгаа бичиж, бусад нь түүнийг хуваалцана.
  */
 async function ProductContent({
   params,

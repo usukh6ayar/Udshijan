@@ -19,7 +19,13 @@ vi.mock("next/headers", () => ({
   }),
 }));
 
-const { requireAdmin, isAdmin } = await import("./session");
+vi.mock("next/navigation", () => ({
+  redirect: (to: string) => {
+    throw new Error("REDIRECT " + to);
+  },
+}));
+
+const { requireAdmin, requireAdminPage, isAdmin } = await import("./session");
 
 beforeEach(() => {
   vi.stubEnv("ADMIN_SESSION_SECRET", SECRET);
@@ -51,5 +57,18 @@ describe("requireAdmin", () => {
     cookieValue = signSession(SECRET, Date.now() + 60_000);
     await expect(requireAdmin()).resolves.toBeUndefined();
     expect(await isAdmin()).toBe(true);
+  });
+});
+
+describe("requireAdminPage", () => {
+  it("хуурамч cookie-тэй үед нэвтрэх хуудас руу буцаана", async () => {
+    // proxy.ts энэ cookie-г нэвтрүүлж, хуудасны бүрхүүл харагдана
+    cookieValue = "x";
+    await expect(requireAdminPage()).rejects.toThrow("REDIRECT /admin/newterh");
+  });
+
+  it("хүчинтэй cookie-тэй үед нэвтрүүлнэ", async () => {
+    cookieValue = signSession(SECRET, Date.now() + 60_000);
+    await expect(requireAdminPage()).resolves.toBeUndefined();
   });
 });

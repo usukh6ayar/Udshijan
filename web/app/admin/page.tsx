@@ -3,9 +3,11 @@ import { Suspense } from "react";
 import { Button } from "@/components/ui/Button";
 import { allProducts } from "@/lib/data/products";
 import { logout } from "@/lib/admin/login-action";
+import { requireAdminPage } from "@/lib/admin/session";
 import { money } from "@/lib/format";
 
 async function ProductRows() {
+  await requireAdminPage();
   const items = await allProducts();
 
   return (

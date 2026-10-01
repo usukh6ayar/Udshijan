@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { deleteProduct } from "@/lib/admin/actions";
+import { requireAdminPage } from "@/lib/admin/session";
 import { productBySlug } from "@/lib/data/products";
 import { ProductForm } from "../ProductForm";
 
@@ -11,6 +12,7 @@ import { ProductForm } from "../ProductForm";
  * хилийн дотор оруулж энд await хийнэ.
  */
 async function FormContent({ params }: { params: Promise<{ slug: string }> }) {
+  await requireAdminPage();
   const { slug } = await params;
   const product = await productBySlug(slug);
   if (!product) notFound();

@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { SESSION_COOKIE, verifySession } from "./auth";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -20,6 +21,15 @@ function secret(): string {
 export async function isAdmin(): Promise<boolean> {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   return token ? verifySession(secret(), token) : false;
+}
+
+/**
+ * Админ хуудасны Suspense хилийн доторх компонентод дуудна. proxy.ts зөвхөн
+ * cookie байгаа эсэхийг хардаг тул хуурамч cookie-тэй хүн бүрхүүлийг харж
+ * болох ч, өгөгдөл уншихаас өмнө энд зогсоно.
+ */
+export async function requireAdminPage(): Promise<void> {
+  if (!(await isAdmin())) redirect("/admin/newterh");
 }
 
 /** Server Action бүрийн эхэнд дуудна. Энэ бол жинхэнэ хамгаалалтын хил. */
