@@ -4,7 +4,12 @@ import { updateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { computeTotals } from "@/lib/pricing";
-import { newAccessKey, orderCookieName, orderCookieOptions } from "./access";
+import {
+  newAccessKey,
+  orderCookieName,
+  orderCookieOptions,
+  phoneMatches,
+} from "./access";
 import {
   mergeQuantities,
   OrderProblem,
@@ -12,14 +17,15 @@ import {
   toOrderItems,
   type ReservedProduct,
 } from "./build";
-import { makeOrderNumber } from "./number";
-import { insertOrder, reserveStock, stockOf } from "./repo";
+import { makeOrderNumber, normalizeOrderNumber } from "./number";
+import { findOrder, insertOrder, markPaid, reserveStock, stockOf } from "./repo";
 import {
   parseCheckoutForm,
   phoneDigits,
   validateCheckout,
   type CheckoutErrors,
 } from "./validate";
+import { orderForViewer } from "./viewer";
 
 export type PlaceOrderResult =
   | { ok: true; number: string }
@@ -125,4 +131,31 @@ export async function placeOrder(input: {
 
   (await cookies()).set(orderCookieName(number), accessKey, orderCookieOptions());
   return { ok: true, number };
+}
+
+/**
+ * Дугаар + утсаар захиалга олж, энэ браузерт cookie тавина. Утас буруу ба
+ * дугаар байхгүй хоёрт ижил хариу өгч дугаар таамаглуулахгүй.
+ */
+export async function lookupOrder(input: {
+  number: unknown;
+  phone: unknown;
+}): Promise<{ ok: true; number: string } | { ok: false }> {
+  const number =
+    typeof input.number === "string" ? normalizeOrderNumber(input.number) : null;
+  const phone = typeof input.phone === "string" ? input.phone : "";
+  if (!number) return { ok: false };
+
+  const order = await findOrder(number);
+  if (!order || !phoneMatches(phone, order.phone)) return { ok: false };
+
+  (await cookies()).set(orderCookieName(number), order.accessKey, orderCookieOptions());
+  return { ok: true, number };
+}
+
+/** ДЕМО: хэрэглэгч QPay/карт дээр «төлсөн» гэж тэмдэглэнэ. Бодит мөнгө алга. */
+export async function markDemoPaid(rawNumber: string): Promise<{ ok: boolean }> {
+  const order = await orderForViewer(rawNumber);
+  if (!order) return { ok: false };
+  return { ok: await markPaid(order.number, "demo") };
 }
